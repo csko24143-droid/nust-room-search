@@ -7,8 +7,8 @@ app = Flask(__name__)
 
 DB_NAME = "schedule_final.db"
 JST = datetime.timezone(datetime.timedelta(hours=9))
-PERIODS = {1: ("09:00", "10:30"), 2: ("10:40", "12:10"), 3: ("13:00", "14:30"),
-           4: ("14:40", "16:10"), 5: ("16:20", "17:50"), 6: ("18:00", "19:30")}
+PERIODS = {1: ("09:00", "10:40"), 2: ("10:50", "12:30"), 3: ("13:20", "15:00"),
+           4: ("15:10", "16:50"), 5: ("17:00", "18:40"), 6: ("18:50", "20:30")}
 ACTIVE_TERMS = ['前期', '通年']
 
 HTML_TEMPLATE = """
@@ -60,6 +60,26 @@ HTML_TEMPLATE = """
         }
 
         .wrap { max-width: 480px; margin: 0 auto; padding: 24px 16px; position: relative; z-index: 1; }
+
+        /* ── レスポンシブ ── */
+        @media (min-width: 768px) {
+            .wrap { max-width: 760px; padding: 40px 32px; }
+            .logo { font-size: 2.6rem; }
+            .subtitle { font-size: 0.92rem; }
+            .card { padding: 28px; }
+            .form-grid { grid-template-columns: 1fr 1fr 2fr; }
+            .form-full { grid-column: auto; }
+            .room-grid { grid-template-columns: repeat(5, 1fr); }
+        }
+        @media (min-width: 1100px) {
+            .wrap { max-width: 1100px; padding: 48px 40px; }
+            .page-cols { display: grid; grid-template-columns: 320px 1fr; gap: 32px; align-items: start; }
+            .sidebar { position: sticky; top: 28px; }
+            .logo { font-size: 2.8rem; }
+            .room-grid { grid-template-columns: repeat(7, 1fr); gap: 10px; }
+            .modal { border-radius: 20px; max-width: 460px; margin: auto; }
+            .modal-overlay { align-items: center; }
+        }
 
         /* ── ヘッダー ── */
         header { margin-bottom: 28px; }
@@ -277,115 +297,126 @@ HTML_TEMPLATE = """
         </div>
     </header>
 
-    <!-- 検索フォーム -->
-    <div class="card">
-        <form method="POST" id="search-form">
-            <div class="form-grid">
-                <div>
-                    <label>曜日</label>
-                    <select name="day" id="sel-day">
-                        {% for d in ["月", "火", "水", "木", "金", "土"] %}
-                        <option value="{{ d }}" {% if selected_day == d %}selected{% endif %}>{{ d }}曜日</option>
-                        {% endfor %}
-                    </select>
+    <!-- PC: 2カラム / スマホ・タブレット: 1カラム -->
+    <div class="page-cols">
+
+        <!-- 左サイドバー（PC）/ 上部（スマホ） -->
+        <div class="sidebar">
+            <div class="card">
+                <form method="POST" id="search-form">
+                    <div class="form-grid">
+                        <div>
+                            <label>曜日</label>
+                            <select name="day" id="sel-day">
+                                {% for d in ["月", "火", "水", "木", "金", "土"] %}
+                                <option value="{{ d }}" {% if selected_day == d %}selected{% endif %}>{{ d }}曜日</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label>時限</label>
+                            <select name="period" id="sel-period">
+                                {% for p in range(1, 7) %}
+                                <option value="{{ p }}" {% if selected_period == p %}selected{% endif %}>{{ p }}限 ({{ period_times[p] }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-full">
+                            <label>校舎</label>
+                            <select name="building">
+                                <option value="all">すべての校舎</option>
+                                <option value="tower"     {% if selected_building == 'tower'     %}selected{% endif %}>🏢 タワースコラ</option>
+                                <option value="main"      {% if selected_building == 'main'      %}selected{% endif %}>🏫 駿河台校舎</option>
+                                <option value="funabashi" {% if selected_building == 'funabashi' %}selected{% endif %}>🏛 船橋校舎</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-search">空き教室を検索</button>
+                </form>
+            </div>
+        </div><!-- /sidebar -->
+
+        <!-- 右: 結果エリア（PC）/ 下部（スマホ） -->
+        <div class="results-area">
+
+            <!-- エラー -->
+            {% if error_message %}
+            <div class="error-card">⚠ {{ error_message }}</div>
+            {% endif %}
+
+            <!-- 結果 -->
+            {% if empty_rooms is not none and not error_message %}
+            <div class="result-meta">
+                <span class="result-label">{{ selected_day }}曜 {{ selected_period }}限 の空き教室</span>
+                <span class="count-chip"><em>{{ empty_rooms|length }}</em> 室</span>
+            </div>
+
+            {% if empty_rooms %}
+                {% set tower_rooms     = empty_rooms | selectattr('building', 'equalto', 'タワースコラ') | list %}
+                {% set surugadai_rooms = empty_rooms | selectattr('building', 'equalto', '駿河台校舎') | list %}
+                {% set funabashi_rooms = empty_rooms | selectattr('building', 'equalto', '船橋校舎') | list %}
+
+                {% if tower_rooms %}
+                <div class="building-section">
+                    <div class="building-label">
+                        <span class="badge badge-tower">タワースコラ</span>
+                        {{ tower_rooms|length }}室
+                    </div>
+                    <div class="room-grid">
+                    {% for room in tower_rooms %}
+                        <div class="room-card tower" onclick="openModal('{{ room.name }}', 'タワースコラ')">
+                            <span class="room-number">{{ room.name }}</span>
+                            <span class="room-bldg">タワースコラ</span>
+                        </div>
+                    {% endfor %}
+                    </div>
                 </div>
-                <div>
-                    <label>時限</label>
-                    <select name="period" id="sel-period">
-                        {% for p in range(1, 7) %}
-                        <option value="{{ p }}" {% if selected_period == p %}selected{% endif %}>{{ p }}限 ({{ period_times[p] }})</option>
-                        {% endfor %}
-                    </select>
+                {% endif %}
+
+                {% if surugadai_rooms %}
+                <div class="building-section">
+                    <div class="building-label">
+                        <span class="badge badge-surugadai">駿河台校舎</span>
+                        {{ surugadai_rooms|length }}室
+                    </div>
+                    <div class="room-grid">
+                    {% for room in surugadai_rooms %}
+                        <div class="room-card surugadai" onclick="openModal('{{ room.name }}', '駿河台校舎')">
+                            <span class="room-number">{{ room.name }}</span>
+                            <span class="room-bldg">駿河台校舎</span>
+                        </div>
+                    {% endfor %}
+                    </div>
                 </div>
-                <div class="form-full">
-                    <label>校舎</label>
-                    <select name="building">
-                        <option value="all">すべての校舎</option>
-                        <option value="tower"     {% if selected_building == 'tower'     %}selected{% endif %}>🏢 タワースコラ</option>
-                        <option value="main"      {% if selected_building == 'main'      %}selected{% endif %}>🏫 駿河台校舎</option>
-                        <option value="funabashi" {% if selected_building == 'funabashi' %}selected{% endif %}>🏛 船橋校舎</option>
-                    </select>
+                {% endif %}
+
+                {% if funabashi_rooms %}
+                <div class="building-section">
+                    <div class="building-label">
+                        <span class="badge badge-funabashi">船橋校舎</span>
+                        {{ funabashi_rooms|length }}室
+                    </div>
+                    <div class="room-grid">
+                    {% for room in funabashi_rooms %}
+                        <div class="room-card funabashi" onclick="openModal('{{ room.name }}', '船橋校舎')">
+                            <span class="room-number">{{ room.name }}</span>
+                            <span class="room-bldg">船橋校舎</span>
+                        </div>
+                    {% endfor %}
+                    </div>
                 </div>
-            </div>
-            <button type="submit" class="btn-search">空き教室を検索</button>
-        </form>
-    </div>
+                {% endif %}
 
-    <!-- エラー -->
-    {% if error_message %}
-    <div class="error-card">⚠ {{ error_message }}</div>
-    {% endif %}
-
-    <!-- 結果 -->
-    {% if empty_rooms is not none and not error_message %}
-    <div class="result-meta">
-        <span class="result-label">{{ selected_day }}曜 {{ selected_period }}限 の空き教室</span>
-        <span class="count-chip"><em>{{ empty_rooms|length }}</em> 室</span>
-    </div>
-
-    {% if empty_rooms %}
-        {% set tower_rooms    = empty_rooms | selectattr('building', 'equalto', 'タワースコラ') | list %}
-        {% set surugadai_rooms= empty_rooms | selectattr('building', 'equalto', '駿河台校舎') | list %}
-        {% set funabashi_rooms= empty_rooms | selectattr('building', 'equalto', '船橋校舎') | list %}
-
-        {% if tower_rooms %}
-        <div class="building-section">
-            <div class="building-label">
-                <span class="badge badge-tower">タワースコラ</span>
-                {{ tower_rooms|length }}室
+            {% else %}
+            <div class="empty-state">
+                <span class="icon">🔍</span>
+                条件に合う空き教室はありませんでした。
             </div>
-            <div class="room-grid">
-            {% for room in tower_rooms %}
-                <div class="room-card tower" onclick="openModal('{{ room.name }}', 'タワースコラ')">
-                    <span class="room-number">{{ room.name }}</span>
-                    <span class="room-bldg">タワースコラ</span>
-                </div>
-            {% endfor %}
-            </div>
-        </div>
-        {% endif %}
+            {% endif %}
+            {% endif %}
 
-        {% if surugadai_rooms %}
-        <div class="building-section">
-            <div class="building-label">
-                <span class="badge badge-surugadai">駿河台校舎</span>
-                {{ surugadai_rooms|length }}室
-            </div>
-            <div class="room-grid">
-            {% for room in surugadai_rooms %}
-                <div class="room-card surugadai" onclick="openModal('{{ room.name }}', '駿河台校舎')">
-                    <span class="room-number">{{ room.name }}</span>
-                    <span class="room-bldg">駿河台校舎</span>
-                </div>
-            {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-
-        {% if funabashi_rooms %}
-        <div class="building-section">
-            <div class="building-label">
-                <span class="badge badge-funabashi">船橋校舎</span>
-                {{ funabashi_rooms|length }}室
-            </div>
-            <div class="room-grid">
-            {% for room in funabashi_rooms %}
-                <div class="room-card funabashi" onclick="openModal('{{ room.name }}', '船橋校舎')">
-                    <span class="room-number">{{ room.name }}</span>
-                    <span class="room-bldg">船橋校舎</span>
-                </div>
-            {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-
-    {% else %}
-    <div class="empty-state">
-        <span class="icon">🔍</span>
-        条件に合う空き教室はありませんでした。
-    </div>
-    {% endif %}
-    {% endif %}
+        </div><!-- /results-area -->
+    </div><!-- /page-cols -->
 
 </div><!-- /wrap -->
 
