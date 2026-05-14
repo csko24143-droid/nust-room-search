@@ -1,6 +1,8 @@
 import os
 import sqlite3
 import datetime
+import collections
+import time
 from flask import Flask, render_template_string, request
 
 app = Flask(__name__)
@@ -10,6 +12,25 @@ JST = datetime.timezone(datetime.timedelta(hours=9))
 PERIODS = {1: ("09:00", "10:40"), 2: ("10:50", "12:30"), 3: ("13:20", "15:00"),
            4: ("15:10", "16:50"), 5: ("17:00", "18:40"), 6: ("18:50", "20:30")}
 ACTIVE_TERMS = ['前期', '通年']
+
+# ── セキュリティ設定 ──────────────────────────────
+# 入力値の許可リスト
+VALID_DAYS      = {'月', '火', '水', '木', '金', '土'}
+VALID_PERIODS   = {1, 2, 3, 4, 5, 6}
+VALID_BUILDINGS = {'all', 'tower', 'main', 'funabashi'}
+
+# インメモリ レートリミット（IPごとに60秒間で30リクエストまで）
+_rate_store = collections.defaultdict(list)
+RATE_LIMIT   = 30   # リクエスト数
+RATE_WINDOW  = 60   # 秒
+
+def is_rate_limited(ip: str) -> bool:
+    now = time.time()
+    _rate_store[ip] = [t for t in _rate_store[ip] if now - t < RATE_WINDOW]
+    if len(_rate_store[ip]) >= RATE_LIMIT:
+        return True
+    _rate_store[ip].append(now)
+    return False
 
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -564,16 +585,39 @@ def index():
     period_times = {p: f"{s}–{e}" for p, (s, e) in PERIODS.items()}
 
     if request.method == 'POST':
+        # ── レートリミット ──
+        ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+        if is_rate_limited(ip):
+            error_message = "リクエストが多すぎます。しばらくしてから再試行してください。"
+            return render_template_string(
+                HTML_TEMPLATE,
+                empty_rooms=[], selected_day=day, selected_period=period,
+                selected_building=building, error_message=error_message,
+                period_times=period_times, searched=False
+            ), 429
+
         searched = True
-        day = request.form.get('day')
-        period = int(request.form.get('period'))
-        building = request.form.get('building')
+        day      = request.form.get('day', '月')
+        period   = request.form.get('period', '1')
+        building = request.form.get('building', 'all')
+
+        # ── 入力値バリデーション ──
+        if day not in VALID_DAYS:
+            day = '月'
+        try:
+            period = int(period)
+            if period not in VALID_PERIODS:
+                period = 1
+        except (ValueError, TypeError):
+            period = 1
+        if building not in VALID_BUILDINGS:
+            building = 'all'
 
     try:
         if not os.path.exists(DB_NAME):
             raise FileNotFoundError(f"データベースファイル '{DB_NAME}' が見つかりません。")
 
-        conn = sqlite3.connect(DB_NAME)
+        conn = sqlite3.connect(f"file:{DB_NAME}?mode=ro", uri=True)
         cur = conn.cursor()
 
         placeholders = ','.join(['?'] * len(ACTIVE_TERMS))
@@ -601,7 +645,10 @@ def index():
         )
 
     except Exception as e:
-        error_message = f"システムエラーが発生しました: {e}"
+        # エラー詳細はログに記録し、ユーザーには汎用メッセージを表示
+        import logging
+        logging.error(f"RoomRadar error: {e}")
+        error_message = "検索中にエラーが発生しました。時間をおいて再試行してください。"
         empty_rooms = []
 
     return render_template_string(
