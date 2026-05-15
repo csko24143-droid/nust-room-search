@@ -1,9 +1,13 @@
 import os
+import re
 import sqlite3
 import datetime
+import random
+import string
 import collections
 import time
-from flask import Flask, render_template_string, request
+import logging
+from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
@@ -12,25 +16,116 @@ JST = datetime.timezone(datetime.timedelta(hours=9))
 PERIODS = {1: ("09:00", "10:40"), 2: ("10:50", "12:30"), 3: ("13:20", "15:00"),
            4: ("15:10", "16:50"), 5: ("17:00", "18:40"), 6: ("18:50", "20:30")}
 ACTIVE_TERMS = ['前期', '通年']
+RESERVE_DB  = "reservations.db"
+REPORTS_DB  = "reports.db"
+REPORT_THRESHOLD = 2  # 何人報告でグレーアウトするか
 
-# ── セキュリティ設定 ──────────────────────────────
-# 入力値の許可リスト
-VALID_DAYS      = {'月', '火', '水', '木', '金', '土'}
-VALID_PERIODS   = {1, 2, 3, 4, 5, 6}
-VALID_BUILDINGS = {'all', 'tower', 'main', 'funabashi'}
+def init_reports_db():
+    conn = sqlite3.connect(REPORTS_DB)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS reports (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            room        TEXT NOT NULL,
+            day         TEXT NOT NULL,
+            period      INTEGER NOT NULL,
+            cancel_code TEXT NOT NULL,
+            expires_at  TEXT NOT NULL
+        )
+    """)
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_rep ON reports (room, day, period)")
+    conn.commit(); conn.close()
 
-# インメモリ レートリミット（IPごとに60秒間で30リクエストまで）
+def cleanup_reports():
+    now = datetime.datetime.now(JST).isoformat()
+    conn = sqlite3.connect(REPORTS_DB)
+    conn.execute("DELETE FROM reports WHERE expires_at < ?", (now,))
+    conn.commit(); conn.close()
+
+def get_report_counts(day, period):
+    """指定曜日・時限の教室ごとの報告数を返す {room: count}"""
+    conn = sqlite3.connect(REPORTS_DB)
+    rows = conn.execute(
+        "SELECT room, COUNT(*) FROM reports WHERE day=? AND period=? GROUP BY room",
+        (day, period)
+    ).fetchall()
+    conn.close()
+    return {r[0]: r[1] for r in rows}
+
+init_reports_db()
+
+# セキュリティ設定
+VALID_DAYS      = {'月','火','水','木','金','土'}
+VALID_PERIODS   = {1,2,3,4,5,6}
+VALID_BUILDINGS = {'all','tower','main','funabashi'}
 _rate_store = collections.defaultdict(list)
-RATE_LIMIT   = 30   # リクエスト数
-RATE_WINDOW  = 60   # 秒
+RATE_LIMIT, RATE_WINDOW = 30, 60
 
-def is_rate_limited(ip: str) -> bool:
+def is_rate_limited(ip):
     now = time.time()
     _rate_store[ip] = [t for t in _rate_store[ip] if now - t < RATE_WINDOW]
-    if len(_rate_store[ip]) >= RATE_LIMIT:
-        return True
+    if len(_rate_store[ip]) >= RATE_LIMIT: return True
     _rate_store[ip].append(now)
     return False
+
+def get_active_terms():
+    now = datetime.datetime.now(JST)
+    return ['前期','通年'] if (4,1) <= (now.month,now.day) <= (9,20) else ['後期','通年']
+
+def get_current_term_label():
+    return '前期' if '前期' in get_active_terms() else '後期'
+
+def period_end_dt(day_str, period_num):
+    """指定の曜日・時限の終了日時（今週分）を返す"""
+    day_map = {'月':0,'火':1,'水':2,'木':3,'金':4,'土':5}
+    now = datetime.datetime.now(JST)
+    target_wd = day_map.get(day_str, 0)
+    delta = (target_wd - now.weekday()) % 7
+    target_date = (now + datetime.timedelta(days=delta)).date()
+    end_str = PERIODS[period_num][1]
+    h, m = map(int, end_str.split(':'))
+    return datetime.datetime(target_date.year, target_date.month, target_date.day,
+                             h, m, tzinfo=JST)
+
+def init_reserve_db():
+    conn = sqlite3.connect(RESERVE_DB)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS reservations (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            room        TEXT NOT NULL,
+            building    TEXT NOT NULL,
+            day         TEXT NOT NULL,
+            period      INTEGER NOT NULL,
+            name        TEXT NOT NULL,
+            purpose     TEXT,
+            cancel_code TEXT NOT NULL,
+            created_at  TEXT NOT NULL,
+            expires_at  TEXT NOT NULL
+        )
+    """)
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_res_room ON reservations (room, day, period)")
+    conn.commit(); conn.close()
+
+def cleanup_expired():
+    """時限終了済みの予約を自動削除"""
+    now = datetime.datetime.now(JST).isoformat()
+    conn = sqlite3.connect(RESERVE_DB)
+    conn.execute("DELETE FROM reservations WHERE expires_at < ?", (now,))
+    conn.commit(); conn.close()
+
+def make_cancel_code():
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+def get_reservations(day, period):
+    """指定曜日・時限の予約一覧を返す"""
+    conn = sqlite3.connect(RESERVE_DB)
+    rows = conn.execute(
+        "SELECT id, room, building, name, purpose, created_at FROM reservations WHERE day=? AND period=?",
+        (day, period)
+    ).fetchall()
+    conn.close()
+    return [{'id':r[0],'room':r[1],'building':r[2],'name':r[3],'purpose':r[4],'created_at':r[5]} for r in rows]
+
+init_reserve_db()
 
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -164,6 +259,44 @@ HTML_TEMPLATE = """
         .btn-search:active { transform: scale(0.98); }
         .btn-search:hover { opacity: 0.88; }
 
+        /* ── 報告済み教室スタイル ── */
+        .room-card.reported {
+            opacity: 0.45;
+            filter: grayscale(0.6);
+            cursor: not-allowed;
+        }
+        .room-card.reported .room-number { text-decoration: line-through; }
+        .reported-badge {
+            position: absolute; top: 6px; right: 6px;
+            font-size: 0.52rem; font-weight: 700; padding: 2px 5px;
+            border-radius: 4px; background: rgba(255,80,80,0.15);
+            color: #ff6060; border: 1px solid rgba(255,80,80,0.3);
+            line-height: 1.4;
+        }
+        .btn-report {
+            width: 100%; margin-top: 12px; padding: 11px;
+            background: rgba(255,80,80,0.08); border: 1px solid rgba(255,80,80,0.25);
+            border-radius: 10px; color: #ff6060; font-size: 0.85rem; font-weight: 700;
+            font-family: 'Noto Sans JP', sans-serif; cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-report:hover { background: rgba(255,80,80,0.15); }
+        .report-count-note {
+            font-size: 0.72rem; color: var(--muted); text-align: center;
+            margin-top: 8px;
+        }
+
+        /* ── 免責事項バナー ── */
+        .disclaimer {
+            display: flex; align-items: flex-start; gap: 10px;
+            background: rgba(255,200,60,0.06);
+            border: 1px solid rgba(255,200,60,0.2);
+            border-radius: 10px; padding: 12px 14px;
+            font-size: 0.78rem; color: #b8a060;
+            line-height: 1.6; margin-bottom: 14px;
+        }
+        .disclaimer-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+
         /* ── 結果ヘッダー ── */
         .result-meta {
             display: flex; justify-content: space-between; align-items: center;
@@ -279,6 +412,50 @@ HTML_TEMPLATE = """
             font-family: 'Noto Sans JP', sans-serif; cursor: pointer;
         }
 
+        /* ── 予約済みバッジ ── */
+        .room-card.has-reserve { position: relative; }
+        .reserve-badge {
+            position: absolute; top: 6px; right: 6px;
+            font-size: 0.55rem; font-weight: 700; padding: 2px 6px;
+            border-radius: 4px; background: rgba(255,200,60,0.15);
+            color: #ffc83c; border: 1px solid rgba(255,200,60,0.3);
+            line-height: 1.4;
+        }
+
+        /* ── 予約一覧パネル ── */
+        .reserve-panel {
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 10px; padding: 14px; margin-top: 10px;
+            font-size: 0.82rem;
+        }
+        .reserve-panel-title {
+            font-size: 0.72rem; font-weight: 700; color: var(--muted);
+            text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px;
+        }
+        .reserve-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 0; border-bottom: 1px solid var(--border);
+        }
+        .reserve-item:last-child { border-bottom: none; }
+        .reserve-item-name { font-weight: 700; color: var(--text); }
+        .reserve-item-purpose { color: var(--muted); font-size: 0.75rem; margin-top: 2px; }
+        .reserve-item-room {
+            font-size: 0.72rem; padding: 2px 8px; border-radius: 4px;
+            background: var(--surface); color: var(--muted);
+        }
+
+        /* ── キャンセルコード表示 ── */
+        .cancel-code-box {
+            background: rgba(108,143,255,0.08); border: 1px solid rgba(108,143,255,0.3);
+            border-radius: 10px; padding: 14px; margin-top: 14px; text-align: center;
+        }
+        .cancel-code-label { font-size: 0.72rem; color: var(--muted); margin-bottom: 6px; }
+        .cancel-code-value {
+            font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800;
+            color: var(--tower-color); letter-spacing: 0.15em;
+        }
+        .cancel-code-note { font-size: 0.72rem; color: var(--muted); margin-top: 6px; }
+
         /* ── トースト ── */
         .toast {
             display: none; position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
@@ -298,6 +475,32 @@ HTML_TEMPLATE = """
         /* ── 空き無し ── */
         .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 0.9rem; }
         .empty-state .icon { font-size: 2.5rem; display: block; margin-bottom: 10px; }
+
+        /* ── 使い方フッター ── */
+        .help-footer {
+            margin-top: 40px; padding-top: 24px;
+            border-top: 1px solid var(--border);
+        }
+        .help-title {
+            font-size: 0.72rem; font-weight: 700; color: var(--muted);
+            text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 14px;
+        }
+        .help-item {
+            display: flex; gap: 12px; align-items: flex-start;
+            padding: 12px 0; border-bottom: 1px solid var(--border);
+        }
+        .help-item:last-child { border-bottom: none; }
+        .help-icon {
+            width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem;
+        }
+        .help-icon.blue  { background: var(--tower-bg);     border: 1px solid var(--tower-border); }
+        .help-icon.green { background: var(--surugadai-bg); border: 1px solid var(--surugadai-border); }
+        .help-icon.red   { background: rgba(255,80,80,0.08); border: 1px solid rgba(255,80,80,0.25); }
+        .help-icon.yellow{ background: rgba(255,200,60,0.08); border: 1px solid rgba(255,200,60,0.2); }
+        .help-text-title { font-size: 0.85rem; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+        .help-text-desc  { font-size: 0.75rem; color: var(--muted); line-height: 1.6; }
 
         /* ── エラー ── */
         .error-card { background: rgba(255,80,80,0.08); border: 1px solid rgba(255,80,80,0.2); border-radius: var(--radius); padding: 16px; color: #ff6060; font-size: 0.85rem; }
@@ -367,6 +570,10 @@ HTML_TEMPLATE = """
 
             <!-- 結果 -->
             {% if empty_rooms is not none and not error_message %}
+            <div class="disclaimer">
+                <span class="disclaimer-icon">⚠</span>
+                <span>時間割に登録されていないゲリラ授業・急遽変更が行われている場合があります。実際に教室を使用する前に、ドア越しに確認することをおすすめします。</span>
+            </div>
             <div class="result-meta">
                 <span class="result-label">{{ selected_day }}曜 {{ selected_period }}限 の空き教室</span>
                 <span class="count-chip"><em>{{ empty_rooms|length }}</em> 室</span>
@@ -385,9 +592,13 @@ HTML_TEMPLATE = """
                     </div>
                     <div class="room-grid">
                     {% for room in tower_rooms %}
-                        <div class="room-card tower" onclick="openModal('{{ room.name }}', 'タワースコラ')">
+                        {% set cnt = report_counts.get(room.name, 0) %}
+                        {% set is_reported = cnt >= report_threshold %}
+                        <div class="room-card tower {% if is_reported %}reported{% endif %} has-report"
+                             onclick="{% if not is_reported %}openModal('{{ room.name }}', 'タワースコラ'){% endif %}">
+                            {% if is_reported %}<span class="reported-badge">使用中の可能性</span>{% endif %}
                             <span class="room-number">{{ room.name }}</span>
-                            <span class="room-bldg">タワースコラ</span>
+                            <span class="room-bldg">{{ cnt }}件の報告</span>
                         </div>
                     {% endfor %}
                     </div>
@@ -402,9 +613,13 @@ HTML_TEMPLATE = """
                     </div>
                     <div class="room-grid">
                     {% for room in surugadai_rooms %}
-                        <div class="room-card surugadai" onclick="openModal('{{ room.name }}', '駿河台校舎')">
+                        {% set cnt = report_counts.get(room.name, 0) %}
+                        {% set is_reported = cnt >= report_threshold %}
+                        <div class="room-card surugadai {% if is_reported %}reported{% endif %} has-report"
+                             onclick="{% if not is_reported %}openModal('{{ room.name }}', '駿河台校舎'){% endif %}">
+                            {% if is_reported %}<span class="reported-badge">使用中の可能性</span>{% endif %}
                             <span class="room-number">{{ room.name }}</span>
-                            <span class="room-bldg">駿河台校舎</span>
+                            <span class="room-bldg">{{ cnt }}件の報告</span>
                         </div>
                     {% endfor %}
                     </div>
@@ -419,9 +634,13 @@ HTML_TEMPLATE = """
                     </div>
                     <div class="room-grid">
                     {% for room in funabashi_rooms %}
-                        <div class="room-card funabashi" onclick="openModal('{{ room.name }}', '船橋校舎')">
+                        {% set cnt = report_counts.get(room.name, 0) %}
+                        {% set is_reported = cnt >= report_threshold %}
+                        <div class="room-card funabashi {% if is_reported %}reported{% endif %} has-report"
+                             onclick="{% if not is_reported %}openModal('{{ room.name }}', '船橋校舎'){% endif %}">
+                            {% if is_reported %}<span class="reported-badge">使用中の可能性</span>{% endif %}
                             <span class="room-number">{{ room.name }}</span>
-                            <span class="room-bldg">船橋校舎</span>
+                            <span class="room-bldg">{{ cnt }}件の報告</span>
                         </div>
                     {% endfor %}
                     </div>
@@ -438,6 +657,57 @@ HTML_TEMPLATE = """
 
         </div><!-- /results-area -->
     </div><!-- /page-cols -->
+
+    <!-- 使い方フッター -->
+    <div class="wrap">
+        <div class="help-footer">
+            <div class="help-title">💡 使い方・機能説明</div>
+
+            <div class="help-item">
+                <div class="help-icon blue">🔍</div>
+                <div>
+                    <div class="help-text-title">空き教室を検索する</div>
+                    <div class="help-text-desc">曜日・時限・校舎を選んで「空き教室を検索」を押すと、授業が入っていない教室を一覧表示します。現在の曜日・時限は自動で選択されます。</div>
+                </div>
+            </div>
+
+            <div class="help-item">
+                <div class="help-icon green">📋</div>
+                <div>
+                    <div class="help-text-title">仮予約する（RoomRadar上のみ）</div>
+                    <div class="help-text-desc">教室カードをタップするとモーダルが開きます。お名前と利用目的を入力して「仮予約する」を押すと、他のユーザーに共有されます。<br>⚠ 大学公式の予約ではなく、使用権を保証するものではありません。</div>
+                </div>
+            </div>
+
+            <div class="help-item">
+                <div class="help-icon red">⚠</div>
+                <div>
+                    <div class="help-text-title">「実は使われていた」を報告する</div>
+                    <div class="help-text-desc">教室カードをタップして「⚠ 実は使われていた」ボタンを押すと報告できます。<strong style="color:var(--text)">2件以上</strong>の報告が集まった教室はグレーアウトされ「使用中の可能性」と表示されます。報告は本人がいつでも取り消せます。また、時限終了後に自動でリセットされます。</div>
+                </div>
+            </div>
+
+            <div class="help-item">
+                <div class="help-icon yellow">🏢</div>
+                <div>
+                    <div class="help-text-title">校舎の色分けについて</div>
+                    <div class="help-text-desc">
+                        <span style="color:var(--tower-color)">■ 青：タワースコラ</span>　
+                        <span style="color:var(--surugadai-color)">■ 緑：駿河台校舎</span>　
+                        <span style="color:var(--funabashi-color)">■ オレンジ：船橋校舎</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="help-item">
+                <div class="help-icon yellow">⚡</div>
+                <div>
+                    <div class="help-text-title">注意事項</div>
+                    <div class="help-text-desc">時間割に登録されていないゲリラ授業や急遽変更が行われている場合があります。実際に入室する前に、ドア越しに確認することをおすすめします。本システムは日大理工学部の学生が自主的に開発・運営しています。</div>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </div><!-- /wrap -->
 
@@ -461,6 +731,8 @@ HTML_TEMPLATE = """
             <textarea id="reserve-note" placeholder="例: グループ課題の打ち合わせ"></textarea>
         </div>
 
+        <button class="btn-report" onclick="submitReport()">⚠ 実は使われていた</button>
+        <div class="report-count-note" id="report-note"></div>
         <div class="modal-actions">
             <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
             <button class="btn-reserve" onclick="submitReserve()">仮予約する</button>
@@ -531,6 +803,7 @@ function openModal(room, building) {
     document.getElementById('reserve-name').value = '';
     document.getElementById('reserve-note').value = '';
     document.getElementById('modal').classList.add('open');
+    updateReportButton();
 }
 
 function closeModal() {
@@ -551,6 +824,58 @@ function submitReserve() {
     showToast('✓ ' + currentRoom + ' を仮予約しました（RoomRadar上のみ）');
 }
 
+// ── 使用中報告 ──
+async function submitReport() {
+    const cancelCode = localStorage.getItem(`report_${currentRoom}_{{ selected_day }}_{{ selected_period }}`);
+    
+    // すでに報告済みなら取り消し
+    if (cancelCode) {
+        const res = await fetch('/api/report/cancel', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({room: currentRoom, day: '{{ selected_day }}', period: {{ selected_period }}, cancel_code: cancelCode})
+        });
+        const data = await res.json();
+        if (data.ok) {
+            localStorage.removeItem(`report_${currentRoom}_{{ selected_day }}_{{ selected_period }}`);
+            closeModal();
+            showToast('✓ 報告を取り消しました');
+            setTimeout(() => location.reload(), 1000);
+        }
+        return;
+    }
+
+    // 新規報告
+    const res = await fetch('/api/report', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({room: currentRoom, day: '{{ selected_day }}', period: {{ selected_period }}})
+    });
+    const data = await res.json();
+    if (data.ok) {
+        localStorage.setItem(`report_${currentRoom}_{{ selected_day }}_{{ selected_period }}`, data.cancel_code);
+        closeModal();
+        showToast('⚠ 報告しました。ありがとうございます！');
+        setTimeout(() => location.reload(), 1000);
+    }
+}
+
+function updateReportButton() {
+    const btn = document.querySelector('.btn-report');
+    const note = document.getElementById('report-note');
+    if (!btn || !currentRoom) return;
+    const cancelCode = localStorage.getItem(`report_${currentRoom}_{{ selected_day }}_{{ selected_period }}`);
+    if (cancelCode) {
+        btn.textContent = '✓ 報告済み（タップで取り消し）';
+        btn.style.background = 'rgba(255,80,80,0.2)';
+        if (note) note.textContent = '時限終了後に自動でリセットされます';
+    } else {
+        btn.textContent = '⚠ 実は使われていた';
+        btn.style.background = '';
+        if (note) note.textContent = '2件以上の報告で「使用中の可能性」と表示されます';
+    }
+}
+
 function showToast(msg) {
     const t = document.getElementById('toast');
     t.textContent = msg;
@@ -563,6 +888,59 @@ function showToast(msg) {
 </body>
 </html>
 """
+
+@app.route('/api/report', methods=['POST'])
+def api_report():
+    data = request.get_json(silent=True) or {}
+    room   = str(data.get('room', '')).strip()[:20]
+    day    = data.get('day', '')
+    period = data.get('period', 0)
+    if not room or day not in VALID_DAYS or period not in VALID_PERIODS:
+        return jsonify({'ok': False, 'error': 'invalid'}), 400
+
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    if is_rate_limited(ip):
+        return jsonify({'ok': False, 'error': 'rate_limited'}), 429
+
+    cleanup_reports()
+    expires = period_end_dt(day, period).isoformat()
+    cancel_code = make_cancel_code()
+
+    conn = sqlite3.connect(REPORTS_DB)
+    conn.execute(
+        "INSERT INTO reports (room, day, period, cancel_code, expires_at) VALUES (?,?,?,?,?)",
+        (room, day, period, cancel_code, expires)
+    )
+    conn.commit()
+    count = conn.execute(
+        "SELECT COUNT(*) FROM reports WHERE room=? AND day=? AND period=?",
+        (room, day, period)
+    ).fetchone()[0]
+    conn.close()
+
+    return jsonify({'ok': True, 'cancel_code': cancel_code, 'count': count})
+
+
+@app.route('/api/report/cancel', methods=['POST'])
+def api_report_cancel():
+    data = request.get_json(silent=True) or {}
+    room        = str(data.get('room', '')).strip()[:20]
+    day         = data.get('day', '')
+    period      = data.get('period', 0)
+    cancel_code = str(data.get('cancel_code', '')).strip()[:10]
+    if not room or not cancel_code:
+        return jsonify({'ok': False}), 400
+
+    conn = sqlite3.connect(REPORTS_DB)
+    cur = conn.cursor()
+    cur.execute(
+        "DELETE FROM reports WHERE room=? AND day=? AND period=? AND cancel_code=?",
+        (room, day, period, cancel_code)
+    )
+    deleted = cur.rowcount
+    conn.commit(); conn.close()
+    return jsonify({'ok': deleted > 0})
+
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -585,39 +963,16 @@ def index():
     period_times = {p: f"{s}–{e}" for p, (s, e) in PERIODS.items()}
 
     if request.method == 'POST':
-        # ── レートリミット ──
-        ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
-        if is_rate_limited(ip):
-            error_message = "リクエストが多すぎます。しばらくしてから再試行してください。"
-            return render_template_string(
-                HTML_TEMPLATE,
-                empty_rooms=[], selected_day=day, selected_period=period,
-                selected_building=building, error_message=error_message,
-                period_times=period_times, searched=False
-            ), 429
-
         searched = True
-        day      = request.form.get('day', '月')
-        period   = request.form.get('period', '1')
-        building = request.form.get('building', 'all')
-
-        # ── 入力値バリデーション ──
-        if day not in VALID_DAYS:
-            day = '月'
-        try:
-            period = int(period)
-            if period not in VALID_PERIODS:
-                period = 1
-        except (ValueError, TypeError):
-            period = 1
-        if building not in VALID_BUILDINGS:
-            building = 'all'
+        day = request.form.get('day')
+        period = int(request.form.get('period'))
+        building = request.form.get('building')
 
     try:
         if not os.path.exists(DB_NAME):
             raise FileNotFoundError(f"データベースファイル '{DB_NAME}' が見つかりません。")
 
-        conn = sqlite3.connect(f"file:{DB_NAME}?mode=ro", uri=True)
+        conn = sqlite3.connect(DB_NAME)
         cur = conn.cursor()
 
         placeholders = ','.join(['?'] * len(ACTIVE_TERMS))
@@ -645,11 +1000,13 @@ def index():
         )
 
     except Exception as e:
-        # エラー詳細はログに記録し、ユーザーには汎用メッセージを表示
-        import logging
-        logging.error(f"RoomRadar error: {e}")
+        import logging; logging.error(f"RoomRadar error: {e}")
         error_message = "検索中にエラーが発生しました。時間をおいて再試行してください。"
         empty_rooms = []
+
+    # 報告数を取得（検索済みの場合のみ）
+    cleanup_reports()
+    report_counts = get_report_counts(day, period) if searched else {}
 
     return render_template_string(
         HTML_TEMPLATE,
@@ -658,7 +1015,10 @@ def index():
         selected_building=building,
         error_message=error_message,
         period_times=period_times,
-        searched=searched
+        searched=searched,
+        report_counts=report_counts,
+        report_threshold=REPORT_THRESHOLD,
+        current_term=get_current_term_label()
     )
 
 if __name__ == '__main__':
