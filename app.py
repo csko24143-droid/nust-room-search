@@ -598,7 +598,12 @@ HTML_TEMPLATE = """
                              onclick="{% if not is_reported %}openModal('{{ room.name }}', 'タワースコラ'){% endif %}">
                             {% if is_reported %}<span class="reported-badge">使用中の可能性</span>{% endif %}
                             <span class="room-number">{{ room.name }}</span>
-                            <span class="room-bldg">{{ cnt }}件の報告</span>
+                            <span class="room-bldg">
+                                {%- set rcnt = reserve_counts.get(room.name, 0) -%}
+                                {%- if rcnt > 0 -%}📋{{ rcnt }}件予約中　{%- endif -%}
+                                {%- if cnt > 0 -%}⚠{{ cnt }}件報告{%- endif -%}
+                                {%- if rcnt == 0 and cnt == 0 -%}タワースコラ{%- endif -%}
+                            </span>
                         </div>
                     {% endfor %}
                     </div>
@@ -619,7 +624,12 @@ HTML_TEMPLATE = """
                              onclick="{% if not is_reported %}openModal('{{ room.name }}', '駿河台校舎'){% endif %}">
                             {% if is_reported %}<span class="reported-badge">使用中の可能性</span>{% endif %}
                             <span class="room-number">{{ room.name }}</span>
-                            <span class="room-bldg">{{ cnt }}件の報告</span>
+                            <span class="room-bldg">
+                                {%- set rcnt = reserve_counts.get(room.name, 0) -%}
+                                {%- if rcnt > 0 -%}📋{{ rcnt }}件予約中　{%- endif -%}
+                                {%- if cnt > 0 -%}⚠{{ cnt }}件報告{%- endif -%}
+                                {%- if rcnt == 0 and cnt == 0 -%}駿河台校舎{%- endif -%}
+                            </span>
                         </div>
                     {% endfor %}
                     </div>
@@ -640,7 +650,12 @@ HTML_TEMPLATE = """
                              onclick="{% if not is_reported %}openModal('{{ room.name }}', '船橋校舎'){% endif %}">
                             {% if is_reported %}<span class="reported-badge">使用中の可能性</span>{% endif %}
                             <span class="room-number">{{ room.name }}</span>
-                            <span class="room-bldg">{{ cnt }}件の報告</span>
+                            <span class="room-bldg">
+                                {%- set rcnt = reserve_counts.get(room.name, 0) -%}
+                                {%- if rcnt > 0 -%}📋{{ rcnt }}件予約中　{%- endif -%}
+                                {%- if cnt > 0 -%}⚠{{ cnt }}件報告{%- endif -%}
+                                {%- if rcnt == 0 and cnt == 0 -%}船橋校舎{%- endif -%}
+                            </span>
                         </div>
                     {% endfor %}
                     </div>
@@ -803,6 +818,7 @@ function openModal(room, building) {
     document.getElementById('reserve-name').value = '';
     document.getElementById('reserve-note').value = '';
     document.getElementById('modal').classList.add('open');
+    updateReserveButton();
     updateReportButton();
 }
 
@@ -814,14 +830,48 @@ function handleOverlayClick(e) {
     if (e.target === document.getElementById('modal')) closeModal();
 }
 
-function submitReserve() {
-    const name = document.getElementById('reserve-name').value.trim();
-    if (!name) {
-        showToast('⚠ お名前を入力してください');
+async function submitReserve() {
+    const name    = document.getElementById('reserve-name').value.trim();
+    const purpose = document.getElementById('reserve-note').value.trim();
+    if (!name) { showToast('⚠ お名前を入力してください'); return; }
+
+    // すでに予約済みなら取り消し
+    const storedCode = localStorage.getItem(`reserve_${currentRoom}_{{ selected_day }}_{{ selected_period }}`);
+    if (storedCode) {
+        const res = await fetch('/api/reserve/cancel', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({room: currentRoom, day: '{{ selected_day }}', period: {{ selected_period }}, cancel_code: storedCode})
+        });
+        const data = await res.json();
+        if (data.ok) {
+            localStorage.removeItem(`reserve_${currentRoom}_{{ selected_day }}_{{ selected_period }}`);
+            closeModal();
+            showToast('✓ 仮予約を取り消しました');
+            setTimeout(() => location.reload(), 1000);
+        }
         return;
     }
-    closeModal();
-    showToast('✓ ' + currentRoom + ' を仮予約しました（RoomRadar上のみ）');
+
+    // 新規予約
+    const res = await fetch('/api/reserve', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            room: currentRoom, building: currentBuilding,
+            day: '{{ selected_day }}', period: {{ selected_period }},
+            name, purpose
+        })
+    });
+    const data = await res.json();
+    if (data.ok) {
+        localStorage.setItem(`reserve_${currentRoom}_{{ selected_day }}_{{ selected_period }}`, data.cancel_code);
+        closeModal();
+        showToast('✓ ' + currentRoom + ' を仮予約しました（RoomRadar上のみ）');
+        setTimeout(() => location.reload(), 1000);
+    } else if (data.error === 'rate_limited') {
+        showToast('⚠ しばらく時間をおいて再試行してください');
+    }
 }
 
 // ── 使用中報告 ──
@@ -860,6 +910,19 @@ async function submitReport() {
     }
 }
 
+function updateReserveButton() {
+    const btn  = document.querySelector('.btn-reserve');
+    const code = localStorage.getItem(`reserve_${currentRoom}_{{ selected_day }}_{{ selected_period }}`);
+    if (!btn) return;
+    if (code) {
+        btn.textContent = '✓ 予約済み（タップで取り消し）';
+        btn.style.background = 'rgba(77,217,160,0.3)';
+    } else {
+        btn.textContent = '仮予約する';
+        btn.style.background = '';
+    }
+}
+
 function updateReportButton() {
     const btn = document.querySelector('.btn-report');
     const note = document.getElementById('report-note');
@@ -888,6 +951,73 @@ function showToast(msg) {
 </body>
 </html>
 """
+
+@app.route('/api/reserve', methods=['POST'])
+def api_reserve():
+    data = request.get_json(silent=True) or {}
+    room    = str(data.get('room', '')).strip()[:20]
+    building= str(data.get('building', '')).strip()[:20]
+    day     = data.get('day', '')
+    period  = data.get('period', 0)
+    name    = str(data.get('name', '')).strip()[:30]
+    purpose = str(data.get('purpose', '')).strip()[:60]
+
+    if not room or not name or day not in VALID_DAYS or period not in VALID_PERIODS:
+        return jsonify({'ok': False, 'error': 'invalid'}), 400
+
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    if is_rate_limited(ip):
+        return jsonify({'ok': False, 'error': 'rate_limited'}), 429
+
+    cleanup_expired()
+    expires     = period_end_dt(day, period).isoformat()
+    cancel_code = make_cancel_code()
+    created_at  = datetime.datetime.now(JST).isoformat()
+
+    conn = sqlite3.connect(RESERVE_DB)
+    conn.execute(
+        "INSERT INTO reservations (room, building, day, period, name, purpose, cancel_code, created_at, expires_at) VALUES (?,?,?,?,?,?,?,?,?)",
+        (room, building, day, period, name, purpose, cancel_code, created_at, expires)
+    )
+    conn.commit()
+    count = conn.execute(
+        "SELECT COUNT(*) FROM reservations WHERE room=? AND day=? AND period=?",
+        (room, day, period)
+    ).fetchone()[0]
+    conn.close()
+    return jsonify({'ok': True, 'cancel_code': cancel_code, 'count': count})
+
+
+@app.route('/api/reserve/cancel', methods=['POST'])
+def api_reserve_cancel():
+    data = request.get_json(silent=True) or {}
+    room        = str(data.get('room', '')).strip()[:20]
+    day         = data.get('day', '')
+    period      = data.get('period', 0)
+    cancel_code = str(data.get('cancel_code', '')).strip()[:10]
+    if not room or not cancel_code:
+        return jsonify({'ok': False}), 400
+
+    conn = sqlite3.connect(RESERVE_DB)
+    cur  = conn.cursor()
+    cur.execute(
+        "DELETE FROM reservations WHERE room=? AND day=? AND period=? AND cancel_code=?",
+        (room, day, period, cancel_code)
+    )
+    deleted = cur.rowcount
+    conn.commit(); conn.close()
+    return jsonify({'ok': deleted > 0})
+
+
+@app.route('/api/reserve/list', methods=['GET'])
+def api_reserve_list():
+    day    = request.args.get('day', '')
+    period = request.args.get('period', 0, type=int)
+    if day not in VALID_DAYS or period not in VALID_PERIODS:
+        return jsonify({'ok': False}), 400
+    cleanup_expired()
+    return jsonify({'ok': True, 'reservations': get_reservations(day, period)})
+
 
 @app.route('/api/report', methods=['POST'])
 def api_report():
@@ -1004,9 +1134,19 @@ def index():
         error_message = "検索中にエラーが発生しました。時間をおいて再試行してください。"
         empty_rooms = []
 
-    # 報告数を取得（検索済みの場合のみ）
+    # 報告数・予約数を取得（検索済みの場合のみ）
     cleanup_reports()
-    report_counts = get_report_counts(day, period) if searched else {}
+    cleanup_expired()
+    report_counts   = get_report_counts(day, period) if searched else {}
+    reserve_counts  = {}
+    if searched:
+        conn = sqlite3.connect(RESERVE_DB)
+        for row in conn.execute(
+            "SELECT room, COUNT(*) FROM reservations WHERE day=? AND period=? GROUP BY room",
+            (day, period)
+        ):
+            reserve_counts[row[0]] = row[1]
+        conn.close()
 
     return render_template_string(
         HTML_TEMPLATE,
@@ -1018,6 +1158,7 @@ def index():
         searched=searched,
         report_counts=report_counts,
         report_threshold=REPORT_THRESHOLD,
+        reserve_counts=reserve_counts,
         current_term=get_current_term_label()
     )
 
