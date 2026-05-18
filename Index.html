@@ -5,7 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RoomRadar — 日大理工 空き教室検索</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Noto+Sans+JP:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* フォント未読み込み時のフォールバック（文字幅を近似） */
+.hero-title { font-family: 'Syne', 'Arial Black', 'Arial', sans-serif; }
+</style>
 <style>
 :root {
   --bg: #f5f3ee;
@@ -102,11 +107,13 @@ body {
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
 .hero-title {
-  font-family: 'Syne', sans-serif;
-  font-size: clamp(2.8rem, 8vw, 6rem);
+  font-family: 'Syne', 'Arial Black', 'Arial', sans-serif;
+  font-size: clamp(2.4rem, 7vw, 5.5rem);
   font-weight: 800; line-height: 1.0;
   letter-spacing: -0.04em;
   opacity: 0; animation: fadeUp 0.7s 0.2s ease forwards;
+  word-break: keep-all;
+  overflow-wrap: normal;
 }
 .hero-title .accent { color: var(--accent); }
 .hero-title .small { font-size: 0.45em; color: var(--muted); display: block; font-weight: 700; margin-top: 4px; letter-spacing: -0.02em; }
