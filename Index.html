@@ -27,7 +27,17 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html, body { scroll-behavior: smooth; overflow-x: hidden; width: 100%; position: relative; }
+html, body { 
+  scroll-behavior: smooth; 
+  overflow-x: hidden; 
+  width: 100%; 
+  max-width: 100vw;
+  position: relative; 
+}
+/* iOS Safari向けの強力なクリッピング */
+body {
+  overflow-x: clip; 
+}
 
 body {
   font-family: 'Noto Sans JP', sans-serif;
@@ -543,6 +553,7 @@ body.lang-zh .hero-title {
 </style>
 </head>
 <body>
+<div class="site-wrapper" style="overflow-x: hidden; width: 100%; position: relative;">
 
 <!-- 言語トグル -->
 <div class="lang-toggle">
@@ -881,6 +892,7 @@ body.lang-zh .hero-title {
   <span class="zh">© 2026 RoomRadar — 日本大学理工学部学生项目。本服务非大学官方服务。</span>
 </footer>
 
+</div>
 <script>
 // 言語切替
 function setLang(lang) {
