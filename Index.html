@@ -475,6 +475,71 @@ body.lang-en .hero-title { font-size: clamp(2.8rem, 9vw, 6.5rem); }
 body.lang-en .hero-title .small { font-size: 0.32em; letter-spacing: 0em; font-weight: 600; }
 /* 中国語版フォント調整 */
 body.lang-zh .hero-title .small { font-size: 0.38em; letter-spacing: 0.02em; }
+
+/* --- Q.U.A.R.K. Refined Balance Adjustments --- */
+.hero {
+  padding: 120px 20px 80px;
+  min-height: 85vh; /* Slightly taller hero for better breathing room */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.hero-desc {
+  font-size: 1.15rem;
+  line-height: 1.7;
+  color: var(--ink);
+  opacity: 0.85; /* Slightly softer text for elegance */
+  margin-bottom: 40px; /* More space before button */
+}
+
+.hero-btn {
+  padding: 18px 40px; /* Slightly larger hit area for mobile */
+  font-size: 1.05rem;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.1); /* Subtle shadow for depth */
+}
+.hero-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+/* Feature cards balance */
+.feature-grid {
+  gap: 30px; /* Increased gap for better separation */
+}
+.feature-card {
+  padding: 40px 30px; /* More inner breathing room */
+}
+
+/* Adjusting Chinese (zh) typography specifics if needed */
+body.lang-zh .hero-title {
+  letter-spacing: 0.05em; /* Chinese characters need slightly different tracking */
+}
+
+@media (max-width: 768px) {
+  .hero {
+    padding: 100px 20px 60px;
+    min-height: auto;
+  }
+  .hero-title {
+    font-size: 3rem; /* Scaled slightly for mobile readability */
+  }
+  .hero-title .small {
+    font-size: 0.35em; /* Ensure subtitle scales perfectly */
+    margin-top: 15px;
+  }
+  .hero-desc {
+    font-size: 1rem;
+    margin-bottom: 30px;
+  }
+  .stat-grid {
+    gap: 15px; /* Tighter stats on mobile */
+  }
+  .stat-item {
+    padding: 20px 15px;
+  }
+}
+
 </style>
 </head>
 <body>
