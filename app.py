@@ -22,7 +22,7 @@ REPORT_THRESHOLD = 2  # 何人報告でグレーアウトするか
 
 def init_reports_db():
     conn = sqlite3.connect(REPORTS_DB)
-    conn.execute(\"\"\"
+    conn.execute("""
         CREATE TABLE IF NOT EXISTS reports (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             room        TEXT NOT NULL,
@@ -31,7 +31,7 @@ def init_reports_db():
             cancel_code TEXT NOT NULL,
             expires_at  TEXT NOT NULL
         )
-    \"\"\")
+    """)
     conn.execute("CREATE INDEX IF NOT EXISTS idx_rep ON reports (room, day, period)")
     conn.commit(); conn.close()
 
@@ -42,7 +42,7 @@ def cleanup_reports():
     conn.commit(); conn.close()
 
 def get_report_counts(day, period):
-    \"\"\"指定曜日・時限の教室ごとの報告数を返す {room: count}\"\"\"
+    """指定曜日・時限の教室ごとの報告数を返す {room: count}"""
     conn = sqlite3.connect(REPORTS_DB)
     rows = conn.execute(
         "SELECT room, COUNT(*) FROM reports WHERE day=? AND period=? GROUP BY room",
@@ -75,7 +75,7 @@ def get_current_term_label():
     return '前期' if '前期' in get_active_terms() else '後期'
 
 def period_end_dt(day_str, period_num):
-    \"\"\"指定の曜日・時限の終了日時（今週分）を返す\"\"\"
+    """指定の曜日・時限の終了日時（今週分）を返す"""
     day_map = {'月':0,'火':1,'水':2,'木':3,'金':4,'土':5}
     now = datetime.datetime.now(JST)
     target_wd = day_map.get(day_str, 0)
@@ -88,7 +88,7 @@ def period_end_dt(day_str, period_num):
 
 def init_reserve_db():
     conn = sqlite3.connect(RESERVE_DB)
-    conn.execute(\"\"\"
+    conn.execute("""
         CREATE TABLE IF NOT EXISTS reservations (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             room        TEXT NOT NULL,
@@ -101,12 +101,12 @@ def init_reserve_db():
             created_at  TEXT NOT NULL,
             expires_at  TEXT NOT NULL
         )
-    \"\"\")
+    """)
     conn.execute("CREATE INDEX IF NOT EXISTS idx_res_room ON reservations (room, day, period)")
     conn.commit(); conn.close()
 
 def cleanup_expired():
-    \"\"\"時限終了済みの予約を自動削除\"\"\"
+    """時限終了済みの予約を自動削除"""
     now = datetime.datetime.now(JST).isoformat()
     conn = sqlite3.connect(RESERVE_DB)
     conn.execute("DELETE FROM reservations WHERE expires_at < ?", (now,))
@@ -116,7 +116,7 @@ def make_cancel_code():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
 def get_reservations(day, period):
-    \"\"\"指定曜日・時限の予約一覧を返す\"\"\"
+    """指定曜日・時限の予約一覧を返す"""
     conn = sqlite3.connect(RESERVE_DB)
     rows = conn.execute(
         "SELECT id, room, building, name, purpose, created_at FROM reservations WHERE day=? AND period=?",
@@ -127,7 +127,7 @@ def get_reservations(day, period):
 
 init_reserve_db()
 
-HTML_TEMPLATE = \"\"\"
+HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -206,14 +206,8 @@ HTML_TEMPLATE = \"\"\"
             background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             background-clip: text;
-        }
-        .logo-link {
-            text-decoration: none;
-            display: inline-block;
-        }
-        .logo-link:hover .logo {
-            opacity: 0.8;
-            transition: opacity 0.2s;
+            user-select: none;
+            -webkit-user-select: none;
         }
         .logo span { font-weight: 700; opacity: 0.5; font-size: 1.1rem; }
         .subtitle { color: var(--muted); font-size: 0.82rem; margin-top: 4px; letter-spacing: 0.03em; }
@@ -519,9 +513,7 @@ HTML_TEMPLATE = \"\"\"
 
     <!-- ヘッダー -->
     <header>
-        <a href="https://csko24143-droid.github.io/nust-room-search/" class="logo-link">
-            <div class="logo">RoomRadar <span>β</span></div>
-        </a>
+        <div class="logo">RoomRadar <span>β</span></div>
         <div class="subtitle">日大理工学部 · 空き教室リアルタイム検索</div>
         <div class="now-badge">
             <span class="dot"></span>
@@ -960,7 +952,7 @@ function showToast(msg) {
 </script>
 </body>
 </html>
-\"\"\"
+"""
 
 @app.route('/api/reserve', methods=['POST'])
 def api_reserve():
