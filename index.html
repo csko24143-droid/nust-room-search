@@ -387,12 +387,10 @@ footer {
   .lang-toggle { top: 12px; right: 12px; }
   .lang-btn { padding: 5px 10px; font-size: 0.7rem; }
 
-  /* lang-toggleの高さ(約40px)＋余白を確保してタイトルが隠れないようにする */
-  .hero { padding: 96px 20px 56px; min-height: 100svh; }
+  .hero { padding: 72px 20px 56px; min-height: 100svh; }
   .hero-eyebrow { font-size: 0.68rem; padding: 5px 12px; margin-bottom: 20px; }
-  /* フォントサイズを抑えてiPhone幅でRoomRadarが収まるようにする */
-  .hero-title { font-size: clamp(2.2rem, 10vw, 3.4rem); }
-  body.lang-en .hero-title { font-size: clamp(1.9rem, 9vw, 3rem); }
+  .hero-title { font-size: clamp(2.6rem, 13vw, 3.8rem); }
+  body.lang-en .hero-title { font-size: clamp(2.2rem, 11vw, 3.2rem); }
   .hero-title .small { font-size: 0.35em; }
   .hero-desc { font-size: 0.92rem; margin: 18px auto 28px; }
   .hero-cta { font-size: 0.95rem; padding: 14px 26px; }
@@ -430,7 +428,7 @@ footer {
    レスポンシブ — 小型スマホ (〜375px)
 ════════════════════════════════════════════ */
 @media (max-width: 375px) {
-  .hero-title { font-size: clamp(1.9rem, 9.5vw, 2.2rem); }
+  .hero-title { font-size: 2.4rem; }
   .hero-stats { flex-direction: column; align-items: center; gap: 12px; }
   .members-grid { grid-template-columns: 1fr; }
 }
@@ -800,6 +798,13 @@ footer {
         <div class="member-role">広報</div>
         <div class="member-dept">生産工学部<br>環境安全工学科 2年</div>
       </div>
+      <div class="member-card reveal reveal-delay-4">
+        <div class="member-avatar">古</div>
+        <div class="member-name">古川 尚登</div>
+        <div class="member-role">CM</div>
+        <div class="member-dept">理工学部<br>物理学科 2年</div>
+      </div>
+
     </div>
   </div>
 </section>
