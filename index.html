@@ -131,12 +131,18 @@ body.lang-zh .hero-title .small{ font-size: 0.38em; letter-spacing: 0.02em; }
   font-size: clamp(2.4rem, 7vw, 5.5rem);
   font-weight: 800; line-height: 1.0; letter-spacing: -0.04em;
   opacity: 0; animation: fadeUp 0.7s 0.2s ease forwards;
+  /* RoomとRadarを折り返し可能にする */
+  display: flex; flex-wrap: wrap; justify-content: center;
+  align-items: baseline; gap: 0 0.08em;
 }
+.title-room, .title-radar { display: inline; }
 .hero-title .accent { color: var(--accent); }
 .hero-title .small {
   font-size: 0.45em; color: var(--muted);
   display: block; font-weight: 700;
   margin-top: 4px; letter-spacing: -0.02em;
+  width: 100%; /* flex折り返し後に全幅で下に来る */
+  text-align: center;
 }
 
 .hero-desc {
@@ -506,7 +512,7 @@ footer {
     </div>
 
     <h1 class="hero-title">
-      Room<span class="accent">Radar</span>
+      <span class="title-room">Room</span><span class="accent title-radar">Radar</span>
       <span class="small">
         <span class="ja">空き教室、すぐ見つかる。</span>
         <span class="en">Find Empty Classrooms. Instantly.</span>
