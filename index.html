@@ -65,10 +65,27 @@ body.lang-en .hero-title .small{ font-size: 0.3em; font-weight: 600; letter-spac
 body.lang-zh .hero-title .small{ font-size: 0.38em; letter-spacing: 0.02em; }
 
 /* ════════════════════════════════════════════
+   ロゴ
+════════════════════════════════════════════ */
+.logo-fixed {
+  position: fixed; top: 24px; left: 24px; z-index: 100;
+  display: flex; align-items: center;
+  height: 48px;
+}
+.logo-fixed img {
+  height: 48px; width: auto;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.08));
+  transition: transform 0.3s ease;
+}
+.logo-fixed img:hover {
+  transform: scale(1.05);
+}
+
+/* ════════════════════════════════════════════
    言語トグル
 ════════════════════════════════════════════ */
 .lang-toggle {
-  position: fixed; top: 20px; right: 20px; z-index: 100;
+  position: fixed; top: 24px; right: 24px; z-index: 100;
   display: flex;
   border: 1.5px solid var(--border); border-radius: 99px;
   background: var(--card); overflow: hidden;
@@ -89,7 +106,7 @@ body.lang-zh .hero-title .small{ font-size: 0.38em; letter-spacing: 0.02em; }
   min-height: 100vh;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  padding: 56px 24px 72px;
+  padding: 80px 24px;
   position: relative; overflow: hidden;
   text-align: center;
 }
@@ -113,30 +130,12 @@ body.lang-zh .hero-title .small{ font-size: 0.38em; letter-spacing: 0.02em; }
   margin: 0 auto;
 }
 
-.hero-logo-img {
-  /* スマホ: ちょうどいいサイズを維持 */
-  width: clamp(140px, 38vw, 190px);
-  height: auto;
-  display: block;
-  margin: 0 auto 8px;
-  opacity: 0; animation: fadeUp 0.6s 0.05s ease forwards;
-  filter: drop-shadow(0 4px 28px rgba(37,99,235,0.18));
-}
-/* iPad (768px〜1099px): もう少し大きく */
-@media (min-width: 768px) and (max-width: 1099px) {
-  .hero-logo-img { width: clamp(220px, 28vw, 280px); margin-bottom: 12px; }
-}
-/* PC (1100px〜) */
-@media (min-width: 1100px) {
-  .hero-logo-img { width: 260px; margin-bottom: 14px; }
-}
-
 .hero-eyebrow {
   display: inline-flex; align-items: center; gap: 8px;
   font-family: 'DM Mono', monospace; font-size: 0.75rem;
   color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase;
   background: rgba(37,99,235,0.08); border: 1px solid rgba(37,99,235,0.2);
-  padding: 6px 14px; border-radius: 99px; margin-bottom: 16px;
+  padding: 6px 14px; border-radius: 99px; margin-bottom: 28px;
   opacity: 0; animation: fadeUp 0.6s 0.1s ease forwards;
 }
 .hero-eyebrow .dot {
@@ -146,7 +145,7 @@ body.lang-zh .hero-title .small{ font-size: 0.38em; letter-spacing: 0.02em; }
 
 .hero-title {
   font-family: 'Syne', 'Arial Black', sans-serif;
-  font-size: clamp(1.9rem, 5.8vw, 4.6rem);
+  font-size: clamp(2.4rem, 7vw, 5.5rem);
   font-weight: 800; line-height: 1.0; letter-spacing: -0.04em;
   opacity: 0; animation: fadeUp 0.7s 0.2s ease forwards;
   /* RoomとRadarを折り返し可能にする */
@@ -165,7 +164,7 @@ body.lang-zh .hero-title .small{ font-size: 0.38em; letter-spacing: 0.02em; }
 
 .hero-desc {
   font-size: clamp(1rem, 2.5vw, 1.2rem); color: var(--muted);
-  line-height: 1.8; margin: 16px auto 28px; max-width: 560px;
+  line-height: 1.8; margin: 24px auto 40px; max-width: 560px;
   opacity: 0; animation: fadeUp 0.7s 0.35s ease forwards;
 }
 
@@ -507,6 +506,11 @@ footer {
 </head>
 <body>
 
+<!-- ロゴ -->
+<div class="logo-fixed">
+  <img src="rr_logo.png" alt="RoomRadar Logo">
+</div>
+
 <!-- 言語トグル -->
 <div class="lang-toggle">
   <button class="lang-btn active" onclick="setLang('ja')">JP</button>
@@ -521,8 +525,6 @@ footer {
   <div class="bg-circle bg-circle-1"></div>
   <div class="bg-circle bg-circle-2"></div>
   <div class="hero-inner">
-
-    <img src="rr_logo.png" alt="RoomRadar ロゴ" class="hero-logo-img">
 
     <div class="hero-eyebrow">
       <span class="dot"></span>
