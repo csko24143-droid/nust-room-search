@@ -1,0 +1,35 @@
+name: Instagramへ投稿
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_url:
+        description: "投稿する画像の公開URL（https://...）"
+        required: true
+        type: string
+      caption:
+        description: "投稿のキャプション（ハッシュタグ含む）"
+        required: true
+        type: string
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Post to Instagram
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_ACCOUNT_ID: ${{ secrets.IG_ACCOUNT_ID }}
+        run: |
+          python scripts/post_to_instagram.py \
+            --image-url "${{ inputs.image_url }}" \
+            --caption "${{ inputs.caption }}"
