@@ -1,0 +1,7 @@
+# Runtime-generated databases
+reservations.db
+reports.db
+
+# Python
+__pycache__/
+*.pyc
