@@ -210,6 +210,7 @@ HTML_TEMPLATE = """
             -webkit-user-select: none;
         }
         .logo span { font-weight: 700; opacity: 0.5; font-size: 1.1rem; }
+        .logo-link { text-decoration: none; display: inline-block; }
         .subtitle { color: var(--muted); font-size: 0.82rem; margin-top: 4px; letter-spacing: 0.03em; }
 
         /* ── 現在時刻バッジ ── */
@@ -513,7 +514,7 @@ HTML_TEMPLATE = """
 
     <!-- ヘッダー -->
     <header>
-        <div class="logo">RoomRadar <span>β</span></div>
+        <a href="https://csko24143-droid.github.io/nust-room-search/" class="logo-link"><div class="logo">RoomRadar <span>β</span></div></a>
         <div class="subtitle">日大理工学部 · 空き教室リアルタイム検索</div>
         <div class="now-badge">
             <span class="dot"></span>
