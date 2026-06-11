@@ -2,7 +2,7 @@
 Instagram Graph APIへフィード投稿するスクリプト。
 
 必要な環境変数:
-  IG_ACCESS_TOKEN : Instagram/Facebookの長期アクセストークン
+  IG_ACCESS_TOKEN : アクセストークン
   IG_ACCOUNT_ID   : InstagramビジネスアカウントID
 
 使い方:
@@ -14,30 +14,56 @@ import sys
 import time
 import requests
 
-GRAPH_API_VERSION = "v21.0"
-GRAPH_API_BASE = f"https://graph.facebook.com/{GRAPH_API_VERSION}"
+API_VERSION = "v21.0"
+HOSTS = ["https://graph.instagram.com", "https://graph.facebook.com"]
 
 
-def create_media_container(account_id, access_token, image_url, caption):
-    url = f"{GRAPH_API_BASE}/{account_id}/media"
-    resp = requests.post(url, data={
+def show_error(resp, context):
+    try:
+        err = resp.json().get("error", {})
+        print(f"[ERROR] {context} -> {resp.status_code}: "
+              f"type={err.get('type')} code={err.get('code')} message={err.get('message')}",
+              file=sys.stderr)
+    except Exception:
+        print(f"[ERROR] {context} -> {resp.status_code}（本文の解析に失敗）", file=sys.stderr)
+
+
+def detect_host(account_id, access_token):
+    """利用可能なAPIホストを判定する"""
+    for host in HOSTS:
+        resp = requests.get(f"{host}/{API_VERSION}/{account_id}", params={
+            "fields": "id",
+            "access_token": access_token,
+        })
+        if resp.ok:
+            print(f"[INFO] 使用エンドポイント: {host}")
+            return host
+        show_error(resp, f"ホスト判定 {host}")
+    raise RuntimeError("どのAPIホストでもアカウントにアクセスできませんでした。")
+
+
+def create_media_container(host, account_id, access_token, image_url, caption):
+    resp = requests.post(f"{host}/{API_VERSION}/{account_id}/media", data={
         "image_url": image_url,
         "caption": caption,
         "access_token": access_token,
     })
-    resp.raise_for_status()
+    if not resp.ok:
+        show_error(resp, "コンテナ作成")
+        resp.raise_for_status()
     return resp.json()["id"]
 
 
-def wait_until_ready(container_id, access_token, timeout=120, interval=5):
-    url = f"{GRAPH_API_BASE}/{container_id}"
+def wait_until_ready(host, container_id, access_token, timeout=120, interval=5):
     elapsed = 0
     while elapsed < timeout:
-        resp = requests.get(url, params={
+        resp = requests.get(f"{host}/{API_VERSION}/{container_id}", params={
             "fields": "status_code",
             "access_token": access_token,
         })
-        resp.raise_for_status()
+        if not resp.ok:
+            show_error(resp, "ステータス確認")
+            resp.raise_for_status()
         status = resp.json().get("status_code")
         if status == "FINISHED":
             return
@@ -48,13 +74,14 @@ def wait_until_ready(container_id, access_token, timeout=120, interval=5):
     raise TimeoutError("メディアコンテナの準備がタイムアウトしました。")
 
 
-def publish_media(account_id, access_token, container_id):
-    url = f"{GRAPH_API_BASE}/{account_id}/media_publish"
-    resp = requests.post(url, data={
+def publish_media(host, account_id, access_token, container_id):
+    resp = requests.post(f"{host}/{API_VERSION}/{account_id}/media_publish", data={
         "creation_id": container_id,
         "access_token": access_token,
     })
-    resp.raise_for_status()
+    if not resp.ok:
+        show_error(resp, "公開")
+        resp.raise_for_status()
     return resp.json()["id"]
 
 
@@ -71,15 +98,17 @@ def main():
         print("環境変数 IG_ACCESS_TOKEN / IG_ACCOUNT_ID が設定されていません。", file=sys.stderr)
         sys.exit(1)
 
+    host = detect_host(account_id, access_token)
+
     print("メディアコンテナを作成しています...")
-    container_id = create_media_container(account_id, access_token, args.image_url, args.caption)
+    container_id = create_media_container(host, account_id, access_token, args.image_url, args.caption)
     print(f"コンテナID: {container_id}")
 
     print("コンテナの準備完了を待機しています...")
-    wait_until_ready(container_id, access_token)
+    wait_until_ready(host, container_id, access_token)
 
     print("投稿を公開しています...")
-    media_id = publish_media(account_id, access_token, container_id)
+    media_id = publish_media(host, account_id, access_token, container_id)
     print(f"投稿完了！ メディアID: {media_id}")
 
 
