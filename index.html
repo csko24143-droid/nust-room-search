@@ -199,7 +199,7 @@ body.lang-zh .hero-title .small{ font-size: 0.38em; letter-spacing: 0.02em; }
   font-family: 'Syne', sans-serif; font-size: 2.2rem; font-weight: 800;
   color: var(--ink); line-height: 1;
 }
-.stat-num span { color: var(--accent); }
+.stat-num span:not(.num) { color: var(--accent); }
 .stat-label {
   font-size: 0.75rem; color: var(--muted);
   margin-top: 4px; font-family: 'DM Mono', monospace;
@@ -220,24 +220,6 @@ body.lang-zh .hero-title .small{ font-size: 0.38em; letter-spacing: 0.02em; }
 }
 @keyframes blink { 50% { opacity: 0; } }
 
-/* 検索デモ */
-.hero-demo {
-  font-family: 'DM Mono', monospace; font-size: 0.82rem;
-  background: var(--card); border: 1px solid var(--border); border-radius: 14px;
-  padding: 16px 20px; margin: 32px auto; max-width: 380px; text-align: left;
-  box-shadow: 0 8px 30px rgba(26,24,20,0.06);
-  opacity: 0; animation: fadeUp 0.7s 0.45s ease forwards;
-}
-.hero-demo-row {
-  display: flex; align-items: baseline; gap: 8px;
-  color: var(--muted);
-}
-.hero-demo-row + .hero-demo-row { margin-top: 8px; }
-.hero-demo-prompt { color: var(--accent); flex-shrink: 0; }
-.hero-demo-query { color: var(--ink); font-weight: 500; }
-.hero-demo-result { color: var(--ink); font-weight: 600; }
-.hero-demo-result .ok { color: #16a34a; }
-.hero-demo-result .pending { color: var(--muted); }
 
 /* ════════════════════════════════════════════
    アニメーション
@@ -743,17 +725,6 @@ footer {
       <span class="arrow">→</span>
     </a>
 
-    <div class="hero-demo" id="heroDemo">
-      <div class="hero-demo-row">
-        <span class="hero-demo-prompt">&gt;</span>
-        <span class="hero-demo-query" id="demoQuery"></span><span class="cursor" id="demoCursor" style="display:inline-block;width:2px;height:1em;background:var(--accent);margin-left:1px;vertical-align:text-bottom;animation:blink 0.85s steps(1) infinite;"></span>
-      </div>
-      <div class="hero-demo-row">
-        <span class="hero-demo-prompt">→</span>
-        <span class="hero-demo-result" id="demoResult"><span class="pending">…</span></span>
-      </div>
-    </div>
-
     <div class="hero-stats">
       <div class="stat">
         <div class="stat-num" data-count="46"><span class="num">0</span><span>+</span></div>
@@ -1213,66 +1184,6 @@ const TW_PHRASES = {
     }
   }
   tick();
-})();
-
-// ════════════════════════════════════════════
-// ヒーロー — 検索デモ
-// ════════════════════════════════════════════
-const DEMO_STEPS = {
-  ja: [
-    { query: '駿河台 1号館 / 月曜 3限', result: '<span class="ok">空き教室 4件</span> — 1408, 1502, 1605, 1701' },
-    { query: '富士 7号館 / 火曜 2限',   result: '<span class="ok">空き教室 2件</span> — 7203, 7305' },
-    { query: '船橋 14号館 / 金曜 5限',  result: '<span class="ok">空き教室 6件</span> — 1401, 1403, 1502...' },
-  ],
-  en: [
-    { query: 'Surugadai Bldg.1 / Mon P3', result: '<span class="ok">4 rooms free</span> — 1408, 1502, 1605, 1701' },
-    { query: 'Fuji Bldg.7 / Tue P2',      result: '<span class="ok">2 rooms free</span> — 7203, 7305' },
-    { query: 'Funabashi Bldg.14 / Fri P5',result: '<span class="ok">6 rooms free</span> — 1401, 1403, 1502...' },
-  ],
-  zh: [
-    { query: '骏河台 1号馆 / 周一 第3节', result: '<span class="ok">4间空教室</span> — 1408, 1502, 1605, 1701' },
-    { query: '富士 7号馆 / 周二 第2节',   result: '<span class="ok">2间空教室</span> — 7203, 7305' },
-    { query: '船桥 14号馆 / 周五 第5节',  result: '<span class="ok">6间空教室</span> — 1401, 1403, 1502...' },
-  ],
-};
-(function () {
-  const queryEl = document.getElementById('demoQuery');
-  const resultEl = document.getElementById('demoResult');
-  if (!queryEl || !resultEl) return;
-  if (reduceMotion) {
-    const s = DEMO_STEPS.ja[0];
-    queryEl.textContent = s.query;
-    resultEl.innerHTML = s.result;
-    return;
-  }
-  function getLang() {
-    if (document.body.classList.contains('lang-en')) return 'en';
-    if (document.body.classList.contains('lang-zh')) return 'zh';
-    return 'ja';
-  }
-  let stepIdx = 0, charIdx = 0;
-  function typeQuery() {
-    const steps = DEMO_STEPS[getLang()];
-    const step = steps[stepIdx % steps.length];
-    charIdx++;
-    queryEl.textContent = step.query.slice(0, charIdx);
-    if (charIdx < step.query.length) {
-      setTimeout(typeQuery, 55);
-    } else {
-      resultEl.innerHTML = '<span class="pending">検索中...</span>';
-      setTimeout(() => showResult(step), 600);
-    }
-  }
-  function showResult(step) {
-    resultEl.innerHTML = step.result;
-    setTimeout(() => {
-      stepIdx++;
-      charIdx = 0;
-      queryEl.textContent = '';
-      setTimeout(typeQuery, 300);
-    }, 3200);
-  }
-  typeQuery();
 })();
 
 // ════════════════════════════════════════════
