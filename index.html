@@ -215,6 +215,72 @@ body.lang-zh .hero-title .small{ font-size: 0.38em; letter-spacing: 0.02em; }
 }
 @keyframes pulse { 0%,100%{ opacity:1; } 50%{ opacity:0.3; } }
 
+/* ── 背景の動き ── */
+@keyframes drift1 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  50%     { transform: translate(-40px, 36px) scale(1.12); }
+}
+@keyframes drift2 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  50%     { transform: translate(48px, -28px) scale(1.08); }
+}
+.bg-circle-1 { animation: drift1 20s ease-in-out infinite; }
+.bg-circle-2 { animation: drift2 26s ease-in-out infinite; }
+
+@keyframes gridPan {
+  from { background-position: 0 0, 0 0; }
+  to   { background-position: 48px 48px, 48px 48px; }
+}
+.hero::before { animation: gridPan 9s linear infinite; }
+
+/* ── レーダーのping ── */
+.ping-layer { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+.ping {
+  position: absolute; width: 320px; height: 320px;
+  margin: -160px 0 0 -160px;
+  border: 1.5px solid rgba(37,99,235,0.22); border-radius: 50%;
+  opacity: 0; animation: ping 6s ease-out infinite;
+}
+.ping.p1 { top: 28%; left: 22%; }
+.ping.p2 { top: 64%; left: 78%; animation-delay: 2s; border-color: rgba(249,115,22,0.2); }
+.ping.p3 { top: 78%; left: 30%; animation-delay: 4s; }
+@keyframes ping {
+  0%   { transform: scale(0.15); opacity: 0.55; }
+  70%  { opacity: 0; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+/* ── 浮遊する記号 ── */
+.symbols { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+.symbol {
+  position: absolute; font-family: 'DM Mono', monospace;
+  color: rgba(37,99,235,0.16); user-select: none;
+  animation: floatY 13s ease-in-out infinite;
+}
+.symbol.orange { color: rgba(249,115,22,0.16); }
+@keyframes floatY {
+  0%,100% { transform: translateY(0) rotate(0deg); }
+  50%     { transform: translateY(-26px) rotate(10deg); }
+}
+
+/* ── タイトルのスイープ（青系・配色は維持） ── */
+.hero-title .title-radar {
+  background: linear-gradient(90deg, var(--accent) 30%, #7aa2ff 50%, var(--accent) 70%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  animation: sweep 4.5s linear infinite;
+}
+@keyframes sweep { from { background-position: 220% 0; } to { background-position: -220% 0; } }
+
+/* アクセシビリティ: 動きを減らす設定を尊重 */
+@media (prefers-reduced-motion: reduce) {
+  .bg-circle-1, .bg-circle-2, .hero::before, .ping, .symbol, .hero-title .title-radar {
+    animation: none !important;
+  }
+  .hero-title .title-radar { color: var(--accent); -webkit-text-fill-color: var(--accent); }
+}
+
 .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.7s ease, transform 0.7s ease; }
 .reveal.visible { opacity: 1; transform: translateY(0); }
 .reveal-delay-1 { transition-delay: 0.1s; }
@@ -370,6 +436,71 @@ section { padding: 100px 24px; }
   padding: 3px 10px; border-radius: 99px; margin-bottom: 8px;
 }
 .member-dept { font-size: 0.75rem; color: var(--muted); line-height: 1.5; }
+
+/* ════════════════════════════════════════════
+   意見箱
+════════════════════════════════════════════ */
+.feedback { background: linear-gradient(135deg, #fef9f0 0%, #eef2ff 100%); }
+.feedback-card {
+  max-width: 620px; margin: 0 auto;
+  background: var(--card); border: 1.5px solid var(--border);
+  border-radius: 24px; padding: 40px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.06);
+  position: relative; overflow: hidden;
+}
+.feedback-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+}
+.feedback-field { margin-bottom: 20px; text-align: left; }
+.feedback-field label {
+  display: block; font-family: 'DM Mono', monospace;
+  font-size: 0.74rem; font-weight: 700; letter-spacing: 0.06em;
+  color: var(--ink); margin-bottom: 8px;
+}
+.feedback-field label .req { color: var(--accent2); }
+.feedback-field select,
+.feedback-field textarea,
+.feedback-field input {
+  width: 100%; border: 1.5px solid var(--border); border-radius: 12px;
+  padding: 12px 14px; font-family: 'Noto Sans JP', sans-serif;
+  font-size: 0.92rem; background: var(--bg); color: var(--ink);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.feedback-field textarea { resize: vertical; min-height: 120px; line-height: 1.7; }
+.feedback-field select:focus,
+.feedback-field textarea:focus,
+.feedback-field input:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+}
+.feedback-submit {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; border: none; cursor: pointer;
+  background: var(--ink); color: #fff;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 1rem; font-weight: 700; padding: 16px 32px;
+  border-radius: 99px; box-shadow: 0 4px 20px rgba(26,24,20,0.2);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.feedback-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(26,24,20,0.25); }
+.feedback-submit:disabled { opacity: 0.6; cursor: default; transform: none; }
+.feedback-note {
+  font-size: 0.72rem; color: var(--muted); margin-top: 14px;
+  text-align: center; line-height: 1.7;
+}
+.feedback-thanks {
+  display: none; text-align: center; padding: 30px 10px;
+}
+.feedback-thanks .check {
+  font-size: 2.6rem; display: block; margin-bottom: 12px;
+}
+.feedback-thanks .msg {
+  font-family: 'Syne', sans-serif; font-size: 1.2rem; font-weight: 700;
+  color: var(--ink);
+}
+.feedback-card.sent .feedback-form  { display: none; }
+.feedback-card.sent .feedback-thanks { display: block; }
 
 /* ════════════════════════════════════════════
    CTA
@@ -532,6 +663,20 @@ footer {
 <section class="hero">
   <div class="bg-circle bg-circle-1"></div>
   <div class="bg-circle bg-circle-2"></div>
+  <div class="ping-layer">
+    <div class="ping p1"></div>
+    <div class="ping p2"></div>
+    <div class="ping p3"></div>
+  </div>
+  <div class="symbols">
+    <span class="symbol" style="top:18%; left:12%; font-size:1.6rem; animation-delay:0s;">⌖</span>
+    <span class="symbol orange" style="top:30%; left:84%; font-size:1.2rem; animation-delay:2s;">✦</span>
+    <span class="symbol" style="top:70%; left:8%; font-size:1.1rem; animation-delay:4s;">⊹</span>
+    <span class="symbol" style="top:80%; left:88%; font-size:1.5rem; animation-delay:1s;">◎</span>
+    <span class="symbol orange" style="top:14%; left:60%; font-size:0.9rem; animation-delay:3s;">·</span>
+    <span class="symbol" style="top:52%; left:92%; font-size:1.3rem; animation-delay:5s;">⟡</span>
+    <span class="symbol" style="top:60%; left:18%; font-size:0.95rem; animation-delay:2.5s;">+</span>
+  </div>
   <div class="hero-inner">
 
     <div class="hero-eyebrow">
@@ -846,6 +991,81 @@ footer {
 </section>
 
 <!-- ════════════════════════════════════════════
+     意見箱
+════════════════════════════════════════════ -->
+<section class="feedback">
+  <div class="section-inner">
+    <div class="section-eyebrow reveal" style="text-align:center;">
+      <span class="ja">意見箱</span>
+      <span class="en">Feedback</span>
+      <span class="zh">意见箱</span>
+    </div>
+    <h2 class="section-title reveal" style="text-align:center;">
+      <span class="ja">あなたの声で、もっと良くなる。</span>
+      <span class="en">Help us make it better.</span>
+      <span class="zh">你的反馈让它更好。</span>
+    </h2>
+    <div class="feedback-card reveal" id="feedbackCard">
+      <form class="feedback-form" id="feedbackForm">
+        <div class="feedback-field">
+          <label>
+            <span class="ja">種類</span>
+            <span class="en">Category</span>
+            <span class="zh">类型</span>
+          </label>
+          <select name="category" id="fbCategory">
+            <option value="機能要望">機能要望 / Feature request</option>
+            <option value="バグ報告">バグ報告 / Bug report</option>
+            <option value="教室データの誤り">教室データの誤り / Wrong room data</option>
+            <option value="その他">その他 / Other</option>
+          </select>
+        </div>
+        <div class="feedback-field">
+          <label>
+            <span class="ja">ご意見・ご要望 <span class="req">*</span></span>
+            <span class="en">Your feedback <span class="req">*</span></span>
+            <span class="zh">您的意见・要望 <span class="req">*</span></span>
+          </label>
+          <textarea name="opinion" id="fbOpinion" required
+            placeholder="例：◯◯校舎の△△教室が表示されない／こんな機能が欲しい など"></textarea>
+        </div>
+        <div class="feedback-field">
+          <label>
+            <span class="ja">連絡先（任意）</span>
+            <span class="en">Contact (optional)</span>
+            <span class="zh">联系方式（可选）</span>
+          </label>
+          <input type="text" name="contact" id="fbContact"
+            placeholder="メール / Instagram など（返信が必要な場合）">
+        </div>
+        <button type="submit" class="feedback-submit" id="fbSubmit">
+          <span class="ja">送信する</span>
+          <span class="en">Send</span>
+          <span class="zh">提交</span>
+          <span class="arrow">→</span>
+        </button>
+        <p class="feedback-note">
+          <span class="ja">いただいた声は今後の改善に活用させていただきます。</span>
+          <span class="en">Your feedback helps shape future updates.</span>
+          <span class="zh">您的反馈将用于今后的改进。</span>
+        </p>
+      </form>
+      <div class="feedback-thanks">
+        <span class="check">📡</span>
+        <div class="msg">
+          <span class="ja">送信ありがとうございました！</span>
+          <span class="en">Thank you for your feedback!</span>
+          <span class="zh">感谢您的反馈！</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Googleフォーム送信用の隠しiframe（ページ遷移を防ぐ） -->
+<iframe name="fbHiddenFrame" id="fbHiddenFrame" style="display:none;"></iframe>
+
+<!-- ════════════════════════════════════════════
      CTA
 ════════════════════════════════════════════ -->
 <section class="cta-section">
@@ -898,6 +1118,59 @@ const observer = new IntersectionObserver(
   { threshold: 0.12 }
 );
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// ════════════════════════════════════════════
+// 意見箱 — Googleフォームへ送信
+// ════════════════════════════════════════════
+// ↓ Googleフォーム作成後に以下3つを差し替えてください
+const GOOGLE_FORM = {
+  action: 'https://docs.google.com/forms/d/e/__FORM_ID__/formResponse',
+  entryOpinion:  'entry.__OPINION__',   // ご意見・ご要望
+  entryCategory: 'entry.__CATEGORY__',  // 種類
+  entryContact:  'entry.__CONTACT__',   // 連絡先
+};
+
+(function () {
+  const form = document.getElementById('feedbackForm');
+  if (!form) return;
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const opinion = document.getElementById('fbOpinion').value.trim();
+    if (!opinion) return;
+
+    // 隠しiframeをターゲットにGoogleフォームへPOST（ページ遷移なし）
+    const gForm = document.createElement('form');
+    gForm.action = GOOGLE_FORM.action;
+    gForm.method = 'POST';
+    gForm.target = 'fbHiddenFrame';
+    gForm.style.display = 'none';
+
+    const add = (name, value) => {
+      if (!name || name.indexOf('__') !== -1) return; // 未設定のentryはスキップ
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = name;
+      input.value = value;
+      gForm.appendChild(input);
+    };
+    add(GOOGLE_FORM.entryOpinion,  opinion);
+    add(GOOGLE_FORM.entryCategory, document.getElementById('fbCategory').value);
+    add(GOOGLE_FORM.entryContact,  document.getElementById('fbContact').value.trim());
+
+    document.body.appendChild(gForm);
+    gForm.submit();
+    document.body.removeChild(gForm);
+
+    // GA4イベント（任意）
+    if (typeof gtag === 'function') {
+      gtag('event', 'feedback_submit', { category: document.getElementById('fbCategory').value });
+    }
+
+    // 完了表示に切り替え
+    document.getElementById('feedbackCard').classList.add('sent');
+  });
+})();
 </script>
 </body>
 </html>
