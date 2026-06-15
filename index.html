@@ -601,37 +601,60 @@ section { padding: 100px 24px; }
   color: rgba(255,255,255,0.3); letter-spacing: 0.08em;
 }
 
-/* Instagramフォロー */
-.cta-social {
-  position: relative; z-index: 1;
-  margin: 48px auto 0; max-width: 460px;
-  display: flex; align-items: center; gap: 22px;
-  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 22px; padding: 22px 26px; text-align: left;
+/* ════════════════════════════════════════════
+   Instagramフォロー（ヒーロー直下）
+════════════════════════════════════════════ */
+.social { background: linear-gradient(135deg, #eef2ff 0%, #fef9f0 100%); }
+.social-card {
+  max-width: 720px; margin: 0 auto;
+  display: flex; align-items: center; gap: 36px;
+  background: var(--card); border: 1.5px solid var(--border);
+  border-radius: 28px; padding: 40px 44px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.07);
+  position: relative; overflow: hidden;
 }
-.cta-social-qr {
-  flex-shrink: 0; width: 96px; height: 96px; border-radius: 14px;
-  background: #fff; padding: 7px; box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+.social-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 5px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
 }
-.cta-social-qr img { width: 100%; height: 100%; display: block; }
-.cta-social-body { flex: 1; min-width: 0; }
-.cta-social-label {
-  font-family: 'DM Mono', monospace; font-size: 0.7rem; letter-spacing: 0.12em;
-  text-transform: uppercase; color: var(--accent2); margin-bottom: 6px;
+.social-qr {
+  flex-shrink: 0; width: 132px; height: 132px; border-radius: 18px;
+  background: #fff; padding: 9px; border: 1.5px solid var(--border);
+  box-shadow: 0 10px 28px rgba(26,24,20,0.08);
+  transition: transform 0.25s, box-shadow 0.25s;
 }
-.cta-social-handle {
-  font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.25rem;
-  color: #fff; margin-bottom: 4px; word-break: break-all;
-}
-.cta-social-sub { font-size: 0.8rem; color: rgba(255,255,255,0.5); line-height: 1.5; margin-bottom: 12px; }
-.cta-social-btn {
+.social-qr img { width: 100%; height: 100%; display: block; }
+.social-qr:hover { transform: translateY(-3px); box-shadow: 0 16px 36px rgba(26,24,20,0.14); }
+.social-body { flex: 1; min-width: 0; text-align: left; }
+.social-label {
   display: inline-flex; align-items: center; gap: 8px;
-  background: #fff; color: var(--ink);
-  font-size: 0.85rem; font-weight: 700; padding: 9px 18px;
+  font-family: 'DM Mono', monospace; font-size: 0.72rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--accent2); margin-bottom: 12px;
+}
+.social-label .ig {
+  width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0;
+  background: linear-gradient(135deg, #feda75, #d62976 45%, #962fbf 75%, #4f5bd5);
+}
+.social-handle {
+  font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.6rem;
+  color: var(--ink); margin-bottom: 6px; word-break: break-all;
+}
+.social-sub { font-size: 0.92rem; color: var(--muted); line-height: 1.7; margin-bottom: 20px; }
+.social-btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: var(--ink); color: #fff;
+  font-size: 0.95rem; font-weight: 700; padding: 13px 26px;
   border-radius: 99px; text-decoration: none;
+  box-shadow: 0 4px 20px rgba(26,24,20,0.18);
   transition: transform 0.2s, box-shadow 0.2s;
 }
-.cta-social-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(255,255,255,0.18); }
+.social-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(26,24,20,0.25); }
+.social-btn .arrow { transition: transform 0.2s; }
+.social-btn:hover .arrow { transform: translateX(4px); }
+.social-qr-hint {
+  display: block; font-family: 'DM Mono', monospace; font-size: 0.66rem;
+  color: var(--muted); text-align: center; margin-top: 10px; letter-spacing: 0.04em;
+}
 
 /* ════════════════════════════════════════════
    フッター
@@ -685,8 +708,9 @@ footer {
   .cta-section { padding: 72px 20px; }
   .cta-title { font-size: clamp(1.8rem, 8vw, 3rem); }
   .cta-btn { font-size: 0.95rem; padding: 15px 28px; }
-  .cta-social { flex-direction: column; text-align: center; gap: 16px; padding: 24px 20px; }
-  .cta-social-body { text-align: center; }
+  .social-card { flex-direction: column; text-align: center; gap: 24px; padding: 32px 24px; }
+  .social-body { text-align: center; }
+  .social-label { justify-content: center; }
 }
 
 /* ════════════════════════════════════════════
@@ -851,6 +875,37 @@ footer {
       </div>
     </div>
 
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     Instagramフォロー
+════════════════════════════════════════════ -->
+<section class="social">
+  <div class="section-inner">
+    <div class="social-card reveal">
+      <div>
+        <a class="social-qr" href="https://www.instagram.com/roomradar_nust/" target="_blank" rel="noopener">
+          <img src="assets/instagram-qr.png" alt="RoomRadar Instagram QRコード">
+        </a>
+        <span class="social-qr-hint">SCAN ME</span>
+      </div>
+      <div class="social-body">
+        <div class="social-label"><span class="ig"></span>Instagram</div>
+        <div class="social-handle">@roomradar_nust</div>
+        <p class="social-sub">
+          <span class="ja">最新情報・新機能・お役立ちTipsをInstagramで発信中。フォローして空き教室さがしをもっと快適に。</span>
+          <span class="en">Latest updates, new features, and handy tips on Instagram. Follow us for a smoother classroom hunt.</span>
+          <span class="zh">在Instagram发布最新资讯、新功能和实用小贴士。关注我们，让找空教室更轻松。</span>
+        </p>
+        <a class="social-btn" href="https://www.instagram.com/roomradar_nust/" target="_blank" rel="noopener">
+          <span class="ja">フォローする</span>
+          <span class="en">Follow us</span>
+          <span class="zh">关注我们</span>
+          <span class="arrow">→</span>
+        </a>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -1199,26 +1254,6 @@ footer {
       <span class="zh">打开RoomRadar</span>
       →
     </a>
-    <div class="cta-social reveal">
-      <a class="cta-social-qr" href="https://www.instagram.com/roomradar_nust/" target="_blank" rel="noopener">
-        <img src="assets/instagram-qr.png" alt="RoomRadar Instagram QRコード">
-      </a>
-      <div class="cta-social-body">
-        <div class="cta-social-label">Instagram</div>
-        <div class="cta-social-handle">@roomradar_nust</div>
-        <p class="cta-social-sub">
-          <span class="ja">最新情報・新機能はこちらで発信中。</span>
-          <span class="en">Latest updates &amp; new features here.</span>
-          <span class="zh">最新资讯与新功能在这里发布。</span>
-        </p>
-        <a class="cta-social-btn" href="https://www.instagram.com/roomradar_nust/" target="_blank" rel="noopener">
-          <span class="ja">フォローする</span>
-          <span class="en">Follow</span>
-          <span class="zh">关注</span>
-          →
-        </a>
-      </div>
-    </div>
     <div class="cta-badge reveal">
       <span class="ja">日本大学理工学部 · 学生プロジェクト · 2026</span>
       <span class="en">Nihon University CST · Student Project · 2026</span>
