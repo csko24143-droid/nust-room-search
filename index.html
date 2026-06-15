@@ -602,6 +602,91 @@ section { padding: 100px 24px; }
 }
 
 /* ════════════════════════════════════════════
+   Instagramフォロー（ヒーロー直下）
+════════════════════════════════════════════ */
+.social { background: linear-gradient(135deg, #eef2ff 0%, #fef9f0 100%); }
+.social-card {
+  max-width: 720px; margin: 0 auto;
+  display: flex; align-items: center; gap: 40px;
+  background: var(--card); border: 1.5px solid var(--border);
+  border-radius: 28px; padding: 44px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.07);
+  position: relative; overflow: hidden;
+}
+.social-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 5px;
+  background: linear-gradient(90deg, #feda75, #fa7e1e 25%, #d62976 55%, #962fbf 78%, #4f5bd5);
+}
+.social-qr-wrap { flex-shrink: 0; width: 156px; text-align: center; }
+.social-qr {
+  display: block; width: 156px; height: 156px; border-radius: 20px;
+  background: #fff; padding: 9px;
+  background-image: linear-gradient(#fff, #fff), linear-gradient(45deg, #feda75, #fa7e1e, #d62976, #962fbf, #4f5bd5);
+  background-origin: border-box; background-clip: content-box, border-box;
+  border: 3px solid transparent;
+  box-shadow: 0 12px 30px rgba(214,41,118,0.18);
+  transition: transform 0.25s, box-shadow 0.25s;
+}
+.social-qr img { width: 100%; height: 100%; display: block; border-radius: 12px; }
+.social-qr:hover { transform: translateY(-3px); box-shadow: 0 18px 40px rgba(214,41,118,0.28); }
+.social-qr-hint {
+  display: block; font-family: 'DM Mono', monospace; font-size: 0.64rem;
+  color: var(--muted); margin-top: 10px; letter-spacing: 0.16em;
+}
+.social-body { flex: 1; min-width: 0; text-align: left; }
+.social-label {
+  display: inline-flex; align-items: center; gap: 9px;
+  font-family: 'DM Mono', monospace; font-size: 0.72rem; letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: linear-gradient(45deg, #fa7e1e, #d62976 55%, #962fbf);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  font-weight: 700; margin-bottom: 12px;
+}
+.social-label .ig {
+  width: 20px; height: 20px; border-radius: 6px; flex-shrink: 0;
+  background: linear-gradient(135deg, #feda75, #fa7e1e 30%, #d62976 60%, #962fbf 80%, #4f5bd5);
+  position: relative;
+}
+.social-label .ig::before {
+  content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  width: 8px; height: 8px; border: 1.8px solid #fff; border-radius: 50%;
+}
+.social-label .ig::after {
+  content: ''; position: absolute; top: 3.5px; right: 3.5px;
+  width: 2.2px; height: 2.2px; background: #fff; border-radius: 50%;
+}
+.social-handle {
+  font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.55rem;
+  color: var(--ink); margin-bottom: 8px; line-height: 1.1;
+}
+.social-sub { font-size: 0.92rem; color: var(--muted); line-height: 1.7; margin-bottom: 22px; }
+.social-btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: linear-gradient(45deg, #fa7e1e, #d62976 50%, #962fbf);
+  color: #fff;
+  font-size: 0.95rem; font-weight: 700; padding: 13px 28px;
+  border-radius: 99px; text-decoration: none;
+  box-shadow: 0 6px 22px rgba(214,41,118,0.30);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.social-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(214,41,118,0.42); }
+.social-btn .ig-ico {
+  width: 19px; height: 19px; flex-shrink: 0;
+  border: 2.2px solid #fff; border-radius: 6px; position: relative;
+}
+.social-btn .ig-ico::before {
+  content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  width: 8px; height: 8px; border: 2.2px solid #fff; border-radius: 50%;
+}
+.social-btn .ig-ico::after {
+  content: ''; position: absolute; top: 2px; right: 2px;
+  width: 2.6px; height: 2.6px; background: #fff; border-radius: 50%;
+}
+.social-btn .arrow { transition: transform 0.2s; }
+.social-btn:hover .arrow { transform: translateX(4px); }
+
+/* ════════════════════════════════════════════
    フッター
 ════════════════════════════════════════════ */
 footer {
@@ -653,6 +738,9 @@ footer {
   .cta-section { padding: 72px 20px; }
   .cta-title { font-size: clamp(1.8rem, 8vw, 3rem); }
   .cta-btn { font-size: 0.95rem; padding: 15px 28px; }
+  .social-card { flex-direction: column; text-align: center; gap: 24px; padding: 32px 24px; }
+  .social-body { text-align: center; }
+  .social-label { justify-content: center; }
 }
 
 /* ════════════════════════════════════════════
@@ -817,6 +905,37 @@ footer {
       </div>
     </div>
 
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     Instagramフォロー
+════════════════════════════════════════════ -->
+<section class="social">
+  <div class="section-inner">
+    <div class="social-card reveal">
+      <div class="social-qr-wrap">
+        <a class="social-qr" href="https://www.instagram.com/roomradar_nust/" target="_blank" rel="noopener">
+          <img src="assets/instagram-qr.png" alt="RoomRadar Instagram QRコード">
+        </a>
+        <span class="social-qr-hint">SCAN ME</span>
+      </div>
+      <div class="social-body">
+        <div class="social-label"><span class="ig"></span>Instagram</div>
+        <div class="social-handle">@roomradar_nust</div>
+        <p class="social-sub">
+          <span class="ja">最新情報・新機能・お役立ちTipsをInstagramで発信中。フォローして空き教室さがしをもっと快適に。</span>
+          <span class="en">Latest updates, new features, and handy tips on Instagram. Follow us for a smoother classroom hunt.</span>
+          <span class="zh">在Instagram发布最新资讯、新功能和实用小贴士。关注我们，让找空教室更轻松。</span>
+        </p>
+        <a class="social-btn" href="https://www.instagram.com/roomradar_nust/" target="_blank" rel="noopener">
+          <span class="ig-ico"></span>
+          <span class="ja">フォローする</span>
+          <span class="en">Follow us</span>
+          <span class="zh">关注我们</span>
+        </a>
+      </div>
+    </div>
   </div>
 </section>
 
