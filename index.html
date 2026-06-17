@@ -124,6 +124,8 @@ body.lang-zh .hero-title .small{ font-size: 0.38em; letter-spacing: 0.02em; }
     linear-gradient(var(--border) 1px, transparent 1px),
     linear-gradient(90deg, var(--border) 1px, transparent 1px);
   background-size: 48px 48px;
+  mask-image: linear-gradient(to bottom, #000 0%, #000 78%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 78%, transparent 100%);
 }
 .bg-circle {
   position: absolute; border-radius: 50%;
@@ -924,7 +926,7 @@ footer {
 <!-- ════════════════════════════════════════════
      Instagramフォロー
 ════════════════════════════════════════════ -->
-<div class="blend-band" style="background:linear-gradient(180deg,#f5f3ee 0%,#eef2ff 100%)"></div>
+<div class="blend-band tall" style="background:linear-gradient(180deg,#f5f3ee 0%,#eef2ff 100%)"><span class="glow" style="background:var(--accent2);left:5%;top:-160px;opacity:0.13"></span></div>
 <section class="social">
   <div class="section-inner">
     <div class="social-card reveal">
