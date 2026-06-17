@@ -817,6 +817,21 @@ updateClock();
 })();
 {% endif %}
 
+// ── GA4: 検索イベント計測 ──
+(function() {
+    const form = document.getElementById('search-form');
+    if (!form) return;
+    form.addEventListener('submit', function() {
+        if (typeof gtag === 'function') {
+            gtag('event', 'search', {
+                search_day:      document.getElementById('sel-day').value,
+                search_period:   document.getElementById('sel-period').value,
+                search_building: form.building.value
+            });
+        }
+    });
+})();
+
 // ── 仮予約モーダル ──
 let currentRoom = '', currentBuilding = '';
 
@@ -877,6 +892,9 @@ async function submitReserve() {
     const data = await res.json();
     if (data.ok) {
         localStorage.setItem(`reserve_${currentRoom}_{{ selected_day }}_{{ selected_period }}`, data.cancel_code);
+        if (typeof gtag === 'function') {
+            gtag('event', 'reserve_room', { building: currentBuilding, room: currentRoom });
+        }
         closeModal();
         showToast('✓ ' + currentRoom + ' を仮予約しました（RoomRadar上のみ）');
         setTimeout(() => location.reload(), 1000);
@@ -915,6 +933,9 @@ async function submitReport() {
     const data = await res.json();
     if (data.ok) {
         localStorage.setItem(`report_${currentRoom}_{{ selected_day }}_{{ selected_period }}`, data.cancel_code);
+        if (typeof gtag === 'function') {
+            gtag('event', 'report_room', { building: currentBuilding, room: currentRoom });
+        }
         closeModal();
         showToast('⚠ 報告しました。ありがとうございます！');
         setTimeout(() => location.reload(), 1000);

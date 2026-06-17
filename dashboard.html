@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>RoomRadar — アナリティクス</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Noto+Sans+JP:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#f5f3ee; --ink:#1a1814; --muted:#8a8577;
+    --accent:#2563eb; --accent2:#f97316; --card:#fff; --border:rgba(26,24,20,0.1);
+    --ig1:#fa7e1e; --ig2:#d62976; --ig3:#962fbf;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--ink);
+    padding:40px 24px 80px;max-width:1100px;margin:0 auto;}
+  .head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:8px;}
+  h1{font-family:'Syne',sans-serif;font-weight:800;font-size:2rem;letter-spacing:-0.03em;}
+  .head .badge{font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--accent);
+    background:rgba(37,99,235,0.08);border:1px solid rgba(37,99,235,0.2);
+    padding:4px 12px;border-radius:99px;}
+  .updated{color:var(--muted);font-size:0.8rem;font-family:'DM Mono',monospace;margin-bottom:36px;}
+  h2{font-family:'Syne',sans-serif;font-weight:700;font-size:1.25rem;margin:44px 0 18px;
+    display:flex;align-items:center;gap:10px;}
+  h2 .ig-dot{width:18px;height:18px;border-radius:5px;
+    background:linear-gradient(135deg,#feda75,var(--ig1) 35%,var(--ig2) 65%,var(--ig3));}
+  h2 .ga-dot{width:18px;height:18px;border-radius:5px;background:linear-gradient(135deg,#f9ab00,#e8710a);}
+
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;}
+  .kpi{background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:22px 24px;}
+  .kpi .label{font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--muted);
+    text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;}
+  .kpi .val{font-family:'Syne',sans-serif;font-weight:800;font-size:2rem;line-height:1;}
+  .kpi .delta{font-size:0.8rem;margin-top:6px;font-weight:700;}
+  .kpi .delta.up{color:#16a34a;} .kpi .delta.down{color:#dc2626;} .kpi .delta.flat{color:var(--muted);}
+
+  .card{background:var(--card);border:1.5px solid var(--border);border-radius:20px;padding:24px;}
+  .chart-wrap{position:relative;height:300px;}
+
+  .posts{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;}
+  .post{background:var(--card);border:1.5px solid var(--border);border-radius:16px;overflow:hidden;
+    text-decoration:none;color:inherit;display:flex;flex-direction:column;transition:transform .2s,box-shadow .2s;}
+  .post:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(0,0,0,0.08);}
+  .post img{width:100%;aspect-ratio:1;object-fit:cover;background:#eee;}
+  .post .meta{padding:12px 14px;}
+  .post .cap{font-size:0.78rem;color:var(--muted);line-height:1.5;height:3em;overflow:hidden;margin-bottom:10px;}
+  .post .stats{display:flex;gap:12px;flex-wrap:wrap;font-size:0.78rem;font-family:'DM Mono',monospace;}
+  .post .stats b{font-family:'Syne',sans-serif;font-weight:800;font-size:0.95rem;}
+
+  .ga-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;}
+  .ga-link{background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:20px 22px;
+    text-decoration:none;color:inherit;transition:border-color .2s,transform .2s;}
+  .ga-link:hover{border-color:var(--accent);transform:translateY(-2px);}
+  .ga-link .t{font-weight:700;margin-bottom:6px;}
+  .ga-link .d{font-size:0.82rem;color:var(--muted);line-height:1.6;}
+  .ga-note{font-size:0.85rem;color:var(--muted);line-height:1.8;margin-bottom:18px;
+    background:rgba(37,99,235,0.05);border-left:3px solid var(--accent);padding:14px 18px;border-radius:8px;}
+  .empty{color:var(--muted);font-size:0.9rem;padding:30px;text-align:center;
+    border:1.5px dashed var(--border);border-radius:16px;}
+  a.back{display:inline-block;margin-bottom:24px;color:var(--accent);text-decoration:none;
+    font-size:0.85rem;font-family:'DM Mono',monospace;}
+</style>
+</head>
+<body>
+  <a class="back" href="./index.html">← RoomRadar トップ</a>
+  <div class="head">
+    <h1>アナリティクス</h1>
+    <span class="badge">RoomRadar Analytics</span>
+  </div>
+  <div class="updated" id="updated">データ読み込み中…</div>
+
+  <!-- ════════ Instagram ════════ -->
+  <h2><span class="ig-dot"></span>Instagram</h2>
+  <div class="kpis" id="ig-kpis"></div>
+
+  <h2 style="font-size:1rem;margin-top:32px;">フォロワー推移</h2>
+  <div class="card"><div class="chart-wrap"><canvas id="followersChart"></canvas></div></div>
+
+  <h2 style="font-size:1rem;">リーチ・プロフィール表示</h2>
+  <div class="card"><div class="chart-wrap"><canvas id="reachChart"></canvas></div></div>
+
+  <h2 style="font-size:1rem;">投稿パフォーマンス（エンゲージメント順）</h2>
+  <div id="posts-area"></div>
+
+  <!-- ════════ Google Analytics ════════ -->
+  <h2><span class="ga-dot"></span>サイト分析 (Google Analytics 4)</h2>
+  <div class="ga-note">
+    GA4のアクセスデータ（訪問者数・流入元・人気の検索条件など）は、セキュリティのため
+    Googleの管理画面で確認します。LP・検索アプリ両方に計測タグ
+    <code>G-L1T1CDZ05N</code> を設置済みで、以下のカスタムイベントを記録しています：
+    <code>search</code>（検索）, <code>reserve_room</code>（仮予約）,
+    <code>report_room</code>（使用中報告）, <code>feedback_submit</code>（意見箱）。
+  </div>
+  <div class="ga-grid">
+    <a class="ga-link" href="https://analytics.google.com/analytics/web/#/p0/realtime/overview" target="_blank" rel="noopener">
+      <div class="t">リアルタイム</div><div class="d">今この瞬間の同時アクセス数・閲覧中のページ</div>
+    </a>
+    <a class="ga-link" href="https://analytics.google.com/analytics/web/#/p0/reports/explorer?params=_u..nav%3Dmaui" target="_blank" rel="noopener">
+      <div class="t">集客（流入元）</div><div class="d">Instagram・検索・直リンクなど、どこから来たか</div>
+    </a>
+    <a class="ga-link" href="https://analytics.google.com/analytics/web/#/p0/reports/explorer" target="_blank" rel="noopener">
+      <div class="t">エンゲージメント</div><div class="d">search / reserve_room などカスタムイベントの発生数</div>
+    </a>
+    <a class="ga-link" href="https://analytics.google.com/analytics/web/" target="_blank" rel="noopener">
+      <div class="t">GA4を開く →</div><div class="d">すべてのレポート・ユーザー属性・デバイス</div>
+    </a>
+  </div>
+
+<script>
+const fmt = n => (n === null || n === undefined) ? '—' : n.toLocaleString();
+
+async function load(path){
+  try { const r = await fetch(path); if(!r.ok) throw 0; return await r.json(); }
+  catch(e){ return null; }
+}
+
+function deltaHTML(cur, prev){
+  if(cur == null || prev == null) return '';
+  const d = cur - prev;
+  if(d === 0) return '<div class="delta flat">±0</div>';
+  const cls = d > 0 ? 'up' : 'down';
+  const sign = d > 0 ? '+' : '';
+  return `<div class="delta ${cls}">${sign}${d.toLocaleString()}</div>`;
+}
+
+(async function(){
+  const history = await load('./data/instagram_history.json') || [];
+  const postsData = await load('./data/instagram_posts.json') || {posts:[]};
+
+  document.getElementById('updated').textContent =
+    postsData.updated ? `最終更新: ${postsData.updated}` : 'まだデータがありません（ワークフロー実行後に表示されます）';
+
+  // ── KPI ──
+  const latest = history[history.length-1] || {};
+  const prev   = history[history.length-2] || {};
+  const kpis = [
+    {label:'フォロワー', val:latest.followers_count, prev:prev.followers_count},
+    {label:'フォロー中', val:latest.follows_count,   prev:prev.follows_count},
+    {label:'投稿数',     val:latest.media_count,     prev:prev.media_count},
+    {label:'リーチ(日)', val:latest.reach,           prev:prev.reach},
+  ];
+  document.getElementById('ig-kpis').innerHTML = kpis.map(k => `
+    <div class="kpi"><div class="label">${k.label}</div>
+      <div class="val">${fmt(k.val)}</div>${deltaHTML(k.val, k.prev)}</div>`).join('');
+
+  const labels = history.map(h => h.date);
+
+  // ── グラフ（Chart.jsが読めない場合もKPI/投稿は表示し続ける） ──
+  if (typeof Chart === 'function') {
+    try {
+      new Chart(document.getElementById('followersChart'), {
+        type:'line',
+        data:{labels, datasets:[{label:'フォロワー', data:history.map(h=>h.followers_count),
+          borderColor:'#d62976', backgroundColor:'rgba(214,41,118,0.1)', fill:true, tension:0.3, pointRadius:3}]},
+        options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}}
+      });
+      new Chart(document.getElementById('reachChart'), {
+        type:'bar',
+        data:{labels, datasets:[
+          {label:'リーチ', data:history.map(h=>h.reach ?? null), backgroundColor:'rgba(37,99,235,0.6)'},
+          {label:'プロフィール表示', data:history.map(h=>h.profile_views ?? null), backgroundColor:'rgba(249,115,22,0.6)'}
+        ]},
+        options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom'}}}
+      });
+    } catch (e) { console.warn('chart render failed', e); }
+  }
+
+  // ── 投稿パフォーマンス ──
+  const area = document.getElementById('posts-area');
+  const posts = (postsData.posts || []).slice();
+  if(!posts.length){
+    area.innerHTML = '<div class="empty">投稿データがまだありません。<br>「Instagramインサイトを記録」ワークフローを実行すると表示されます。</div>';
+  } else {
+    const eng = p => (p.total_interactions ?? ((p.like_count||0)+(p.comments_count||0)+(p.saved||0)));
+    posts.sort((a,b)=> eng(b)-eng(a));
+    area.className = 'posts';
+    area.innerHTML = posts.map(p => `
+      <a class="post" href="${p.permalink||'#'}" target="_blank" rel="noopener">
+        ${p.thumbnail ? `<img src="${p.thumbnail}" alt="" loading="lazy">` : ''}
+        <div class="meta">
+          <div class="cap">${(p.caption||'').replace(/</g,'&lt;')}</div>
+          <div class="stats">
+            <span><b>${fmt(p.like_count)}</b> ♥</span>
+            <span><b>${fmt(p.comments_count)}</b> 💬</span>
+            ${p.saved!=null?`<span><b>${fmt(p.saved)}</b> 保存</span>`:''}
+            ${p.reach!=null?`<span><b>${fmt(p.reach)}</b> reach</span>`:''}
+          </div>
+        </div>
+      </a>`).join('');
+  }
+})();
+</script>
+</body>
+</html>
