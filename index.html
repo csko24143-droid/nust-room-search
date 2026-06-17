@@ -324,7 +324,20 @@ section { padding: 100px 24px; }
 /* ════════════════════════════════════════════
    問題提起
 ════════════════════════════════════════════ */
-.problem { background: var(--ink); color: #fff; }
+.problem { background: #2e3a55; color: #fff; }
+/* セクション間のグラデーションつなぎ帯 */
+.blend-band {
+  position: relative; overflow: hidden; pointer-events: none;
+  line-height: 0; height: 72px;
+}
+.blend-band.tall { height: 120px; }
+.blend-band .glow {
+  position: absolute; width: 260px; height: 260px; border-radius: 50%;
+  filter: blur(80px); opacity: 0.18; top: -60px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .blend-band .glow { display: none; }
+}
 .problem .section-eyebrow { color: var(--accent2); }
 .problem .section-title { color: #fff; }
 .problem-grid {
@@ -558,7 +571,7 @@ section { padding: 100px 24px; }
    CTA
 ════════════════════════════════════════════ */
 .cta-section {
-  background: var(--ink); color: #fff;
+  background: #2e3a55; color: #fff;
   text-align: center; padding: 100px 24px;
   position: relative; overflow: hidden;
 }
@@ -911,6 +924,7 @@ footer {
 <!-- ════════════════════════════════════════════
      Instagramフォロー
 ════════════════════════════════════════════ -->
+<div class="blend-band" style="background:linear-gradient(180deg,#f5f3ee 0%,#eef2ff 100%)"></div>
 <section class="social">
   <div class="section-inner">
     <div class="social-card reveal">
@@ -942,6 +956,7 @@ footer {
 <!-- ════════════════════════════════════════════
      問題提起
 ════════════════════════════════════════════ -->
+<div class="blend-band tall" style="background:linear-gradient(180deg,#fef9f0 0%,#2e3a55 100%)"><span class="glow" style="background:var(--accent2);left:60%"></span></div>
 <section class="problem">
   <div class="section-inner">
     <div class="section-eyebrow reveal">
@@ -983,6 +998,7 @@ footer {
   </div>
 </section>
 
+<div class="blend-band tall" style="background:linear-gradient(180deg,#2e3a55 0%,#f5f3ee 100%)"><span class="glow" style="background:var(--accent);left:25%"></span></div>
 <!-- ════════════════════════════════════════════
      特徴
 ════════════════════════════════════════════ -->
@@ -1067,6 +1083,7 @@ footer {
 <!-- ════════════════════════════════════════════
      使い方
 ════════════════════════════════════════════ -->
+<div class="blend-band" style="background:linear-gradient(180deg,#f5f3ee 0%,#eef2ff 100%)"></div>
 <section class="howto">
   <div class="section-inner">
     <div class="section-eyebrow reveal">
@@ -1123,6 +1140,7 @@ footer {
   </div>
 </section>
 
+<div class="blend-band" style="background:linear-gradient(180deg,#fef9f0 0%,#f5f3ee 100%)"></div>
 <!-- ════════════════════════════════════════════
      メンバー
 ════════════════════════════════════════════ -->
@@ -1183,6 +1201,7 @@ footer {
 <!-- ════════════════════════════════════════════
      意見箱
 ════════════════════════════════════════════ -->
+<div class="blend-band" style="background:linear-gradient(180deg,#f5f3ee 0%,#fef9f0 100%)"></div>
 <section class="feedback">
   <div class="section-inner">
     <div class="section-eyebrow reveal" style="text-align:center;">
@@ -1258,6 +1277,7 @@ footer {
 <!-- ════════════════════════════════════════════
      CTA
 ════════════════════════════════════════════ -->
+<div class="blend-band tall" style="background:linear-gradient(180deg,#eef2ff 0%,#2e3a55 100%)"><span class="glow" style="background:var(--accent);left:30%"></span></div>
 <section class="cta-section">
   <div class="cta-particles">
     <span style="width:8px; height:8px; top:20%; left:15%; animation-delay:0s;"></span>
