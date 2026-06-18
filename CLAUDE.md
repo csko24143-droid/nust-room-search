@@ -2,39 +2,38 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## What this is
+## このリポジトリについて
 
-RoomRadar (日大理工学部 空き教室検索) — a real-time empty-classroom finder for Nihon University's
-College of Science and Technology. Students pick a day/period/building and see which classrooms
-have no scheduled class, plus a lightweight "soft reservation" / "actually in use" reporting layer
-on top.
+RoomRadar（日大理工学部 空き教室検索）— 日本大学理工学部向けの、リアルタイム空き教室検索サービス。
+曜日・時限・校舎を選ぶと授業が入っていない教室を表示し、その上に簡易的な「仮予約」「実は使われていた報告」
+機能を載せている。
 
-The repo contains three independently-deployed surfaces that share branding but not code:
+このリポジトリには、ブランドは共有しているがコードは共有していない、3つの独立したデプロイ対象が含まれる。
 
-1. **`app.py`** — the actual Flask application (search + reservation/report API), deployed to
-   Render at `https://nust-room-search.onrender.com`.
-2. **`index.html`** — a static marketing/landing page deployed via GitHub Pages
-   (`csko24143-droid.github.io/nust-room-search`). It links out to the Render-hosted app for the
-   real search feature and is multi-language (ja/en/zh, toggled via CSS classes — see below).
-3. **`dashboard.html`** — a static, `noindex` analytics dashboard (Chart.js) that reads the JSON
-   files in `data/` to show Instagram/GA insights. Not linked from the main UI.
+1. **`app.py`** — 実際のFlaskアプリケーション本体（検索＋予約/報告API）。Renderにデプロイされている
+   （`https://nust-room-search.onrender.com`）。
+2. **`index.html`** — GitHub Pagesでホストされている静的なランディングページ
+   （`csko24143-droid.github.io/nust-room-search`）。実際の検索機能はRender上のアプリへリンクする形。
+   日本語/英語/中国語の3言語対応（CSSクラスで切り替え。詳細は後述）。
+3. **`dashboard.html`** — `noindex`指定の静的アナリティクスダッシュボード（Chart.js使用）。`data/`配下の
+   JSONを読み込んでInstagram/GAのインサイトを表示する。メインUIからはリンクされていない。
 
-There is no shared build system between these — each is a self-contained HTML file (or, for
-`app.py`, a Python file with the HTML/CSS/JS embedded as a Python string template).
+これら3つの間でビルドシステムは共有されていない。それぞれ単体で完結したHTMLファイル
+（`app.py`の場合はHTML/CSS/JSをPythonの文字列テンプレートとして埋め込んだPythonファイル）。
 
-## Commands
+## コマンド
 
-No test suite, linter, or build step exists in this repo.
+このリポジトリにテストスイート・linter・ビルドステップは存在しない。
 
 ```bash
 pip install -r requirements.txt   # flask, pandas, openpyxl, gunicorn
 
-python app.py                     # run the Flask app locally (reads PORT env var, default 10000)
-gunicorn app:app                  # production entrypoint (used by Render)
+python app.py                     # ローカルでFlaskアプリを起動（PORT環境変数を読む、デフォルト10000）
+gunicorn app:app                  # 本番用エントリポイント（Renderが使用）
 ```
 
-Instagram automation scripts (run manually or via the GitHub Actions workflows in
-`.github/workflows/`) require `IG_ACCESS_TOKEN` and `IG_ACCOUNT_ID` env vars:
+Instagram連携スクリプト（手動実行、または`.github/workflows/`内のGitHub Actionsから実行）には
+`IG_ACCESS_TOKEN`と`IG_ACCOUNT_ID`の環境変数が必要。
 
 ```bash
 python scripts/fetch_instagram_posts.py
@@ -42,66 +41,68 @@ python scripts/fetch_instagram_insights.py
 python scripts/post_to_instagram.py --image-url <url> --caption "<text>"
 ```
 
-## Architecture: `app.py`
+## アーキテクチャ: `app.py`
 
-Single-file Flask app. Everything — routes, DB access, and the page itself
-(`HTML_TEMPLATE`, a Jinja string rendered via `render_template_string`) — lives in this one file.
-There is no `templates/` or `static/` directory.
+単一ファイルのFlaskアプリ。ルーティング、DBアクセス、ページ本体
+（`HTML_TEMPLATE`という、`render_template_string`で描画されるJinja文字列テンプレート）が
+すべてこの1ファイルに収まっている。`templates/`や`static/`ディレクトリは存在しない。
 
-**Three separate SQLite databases, with different lifecycles:**
+**3つの独立したSQLiteデータベース、それぞれライフサイクルが異なる：**
 
-- `schedule_final.db` — checked into git, treated as read-only source-of-truth data. Has two
-  tables: `schedules` (course timetable, Japanese column names: 学科/履修期名/曜日/時限/教室/校舎/科目名)
-  and `classrooms` (`name`, `building`). `classroom_data.xlsx` / `summry_classrooms.xlsx` are the
-  raw spreadsheets this DB was built from — they are not read by any code at runtime, so if the
-  timetable needs updating, `schedule_final.db` itself must be regenerated/replaced directly.
-- `reservations.db` / `reports.db` — created at runtime by `init_reserve_db()` /
-  `init_reports_db()`, gitignored. These back the "soft reservation" and "actually in use" report
-  features. Both use a `cancel_code` pattern: an anonymous random 6-char code is returned to the
-  client on create and stored in `localStorage`; the same code is required to delete/cancel later.
-  There is no auth — anyone with the code can cancel.
+- `schedule_final.db` — gitにコミットされている、読み取り専用の正データ。テーブルは2つ：
+  `schedules`（時間割。カラム名は日本語：学科/履修期名/曜日/時限/教室/校舎/科目名）と
+  `classrooms`（`name`, `building`）。`classroom_data.xlsx` / `summry_classrooms.xlsx`はこのDBの
+  元になった生の表データだが、実行時にコードから読まれることはない。時間割を更新したい場合は
+  `schedule_final.db`自体を直接作り直す/置き換える必要がある。
+- `reservations.db` / `reports.db` — `init_reserve_db()` / `init_reports_db()`によって実行時に
+  作成される、`.gitignore`対象のDB。「仮予約」と「実は使われていた報告」機能のバックエンド。
+  どちらも`cancel_code`方式：作成時にランダムな6文字コードをクライアントへ返し`localStorage`に
+  保存、後で削除/取り消しする際に同じコードが必要。認証は無く、コードを知っていれば誰でも
+  取り消せる仕組み。
 
-**Term/time logic:** `ACTIVE_TERMS` and `get_active_terms()` decide whether 前期 (spring) or 後期
-(fall) schedule rows apply, based on a hardcoded month/day window (4/1–9/20 = 前期). `PERIODS`
-maps period number (1–6) to start/end clock times in JST; `period_end_dt()` uses this to compute
-when a reservation/report should auto-expire (cleaned up by `cleanup_expired()` /
-`cleanup_reports()`, called at the top of relevant requests — there is no background job).
+**学期・時間のロジック：** `ACTIVE_TERMS`と`get_active_terms()`が、前期/後期どちらの時間割行を
+適用するかを、ハードコードされた月日の範囲（4/1〜9/20＝前期）で判定する。`PERIODS`は時限番号
+（1〜6）をJSTの開始/終了時刻にマッピングし、`period_end_dt()`がこれを使って予約/報告がいつ自動
+失効するかを計算する（`cleanup_expired()` / `cleanup_reports()`が該当リクエストの先頭で呼ばれる
+形でクリーンアップされる。バックグラウンドジョブは無い）。
 
-**Rate limiting and validation are in-process and in-memory** (`_rate_store`, a
-`collections.defaultdict(list)` keyed by IP). This only works correctly with a single worker
-process — if Render/gunicorn is ever scaled to multiple workers, rate limiting will be
-per-worker, not global. `VALID_DAYS`/`VALID_PERIODS`/`VALID_BUILDINGS` are the whitelist for all
-incoming request params.
+**レート制限とバリデーションはプロセス内・メモリ上**（`_rate_store`、IPをキーにした
+`collections.defaultdict(list)`）。これは単一ワーカープロセスでのみ正しく機能する仕組み。
+将来Render/gunicornをマルチワーカーにスケールした場合、レート制限はワーカーごとに別々になり
+グローバルには効かなくなる。`VALID_DAYS`/`VALID_PERIODS`/`VALID_BUILDINGS`が全リクエスト
+パラメータのホワイトリストになっている。
 
-**API routes** (`/api/reserve`, `/api/reserve/cancel`, `/api/reserve/list`, `/api/report`,
-`/api/report/cancel`) are plain JSON POST/GET endpoints consumed by inline `<script>` in
-`HTML_TEMPLATE`; `/` (GET/POST) is the search page itself, POST being a search submission.
+**APIルート**（`/api/reserve`, `/api/reserve/cancel`, `/api/reserve/list`, `/api/report`,
+`/api/report/cancel`）は、`HTML_TEMPLATE`内のインライン`<script>`から呼ばれる素のJSON
+POST/GETエンドポイント。`/`（GET/POST）が検索ページ本体で、POSTは検索フォームの送信に対応する。
 
-## Architecture: Instagram automation (`scripts/` + `.github/workflows/`)
+## アーキテクチャ: Instagram連携（`scripts/` + `.github/workflows/`）
 
-Three scripts wrap the Instagram Graph API, each trying `graph.instagram.com` then
-`graph.facebook.com` as fallback hosts (`HOSTS` list pattern repeated in all three files):
+3つのスクリプトがInstagram Graph APIをラップしており、それぞれ`graph.instagram.com`を試した後
+`graph.facebook.com`にフォールバックする（`HOSTS`リストのパターンが3ファイルすべてに重複している）。
 
-- `fetch_instagram_posts.py` — debug/inspection script, prints recent posts to stdout. Manual
-  `workflow_dispatch` only.
-- `fetch_instagram_insights.py` — the real data pipeline: appends a daily snapshot to
-  `data/instagram_history.json` and overwrites `data/instagram_posts.json` with latest post
-  performance. Runs on a cron (Mon/Thu 09:00 JST) via `instagram-insights.yml`, which then commits
-  the updated JSON straight back to the branch as `github-actions[bot]`. `dashboard.html` reads
-  these two JSON files client-side to render charts.
-- `post_to_instagram.py` — publishes a new feed post given an image URL + caption. Manual
-  `workflow_dispatch` with `image_url`/`caption` inputs only; never run automatically.
+- `fetch_instagram_posts.py` — デバッグ/確認用スクリプト。最近の投稿を標準出力に表示するだけ。
+  手動の`workflow_dispatch`のみ。
+- `fetch_instagram_insights.py` — 本体のデータパイプライン：`data/instagram_history.json`に
+  日次スナップショットを追記し、`data/instagram_posts.json`を最新の投稿パフォーマンスで上書きする。
+  `instagram-insights.yml`によりcron実行（月・木 09:00 JST）され、その後更新されたJSONを
+  `github-actions[bot]`としてブランチへ直接コミットする。`dashboard.html`はこの2つのJSONを
+  クライアント側で読み込んでグラフを描画する。
+- `post_to_instagram.py` — 画像URL＋キャプションを指定してフィード投稿を公開する。
+  `image_url`/`caption`を入力とする手動の`workflow_dispatch`のみで、自動実行されることは無い。
 
-If you change the shape of `data/instagram_history.json` or `data/instagram_posts.json`, update
-both the writer (`fetch_instagram_insights.py`) and the reader (`dashboard.html`'s JS) together.
+`data/instagram_history.json`または`data/instagram_posts.json`の形式を変更する場合は、
+書き込み側（`fetch_instagram_insights.py`）と読み込み側（`dashboard.html`のJS）を両方
+同時に更新すること。
 
-## Conventions
+## 規約
 
-- Database/table/column identifiers, and most server error/log strings, are Japanese — keep new
-  fields consistent with the existing naming rather than introducing English equivalents.
-- All datetime handling goes through `JST` (`datetime.timezone(timedelta(hours=9))`); don't use
-  naive `datetime.now()` for anything user-facing.
-- `index.html`'s language toggle works by adding a `lang-en`/`lang-zh` class to `<body>` and
-  relying on CSS (`.ja`/`.en`/`.zh` block-level, `span.ja`/`span.en`/`span.zh` inline) to show/hide
-  pre-rendered translated copy — there's no i18n library or runtime string lookup. New copy needs
-  all three language variants added inline, following the existing pattern.
+- DB/テーブル/カラム識別子、およびサーバー側のエラー/ログ文字列の多くは日本語になっている。
+  新しいフィールドを追加する際も英語表記に置き換えるのではなく、既存の命名に合わせること。
+- 日時の扱いはすべて`JST`（`datetime.timezone(timedelta(hours=9))`）を経由する。ユーザーに
+  見える処理でnaiveな`datetime.now()`を使わないこと。
+- `index.html`の言語切り替えは、`<body>`に`lang-en`/`lang-zh`クラスを付与し、CSS
+  （ブロック要素は`.ja`/`.en`/`.zh`、インライン要素は`span.ja`/`span.en`/`span.zh`）で
+  事前に翻訳済みのテキストを出し分ける仕組みで、i18nライブラリや実行時の文字列ルックアップは
+  使っていない。新しい文言を追加する場合は、既存パターンに従って3言語分をインラインで
+  すべて追加する必要がある。
