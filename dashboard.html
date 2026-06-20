@@ -61,6 +61,16 @@
     background:rgba(37,99,235,0.05);border-left:3px solid var(--accent);padding:14px 18px;border-radius:8px;}
   .empty{color:var(--muted);font-size:0.9rem;padding:30px;text-align:center;
     border:1.5px dashed var(--border);border-radius:16px;}
+  .ga-cols{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+  @media(max-width:680px){.ga-cols{grid-template-columns:1fr;}}
+  .barlist{display:flex;flex-direction:column;gap:12px;}
+  .barlist .sub{font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted);
+    text-transform:uppercase;letter-spacing:0.06em;margin:6px 0 2px;}
+  .bar-row{display:grid;grid-template-columns:90px 1fr 48px;align-items:center;gap:10px;font-size:0.85rem;}
+  .bar-row .name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .bar-row .track{height:10px;background:rgba(37,99,235,0.1);border-radius:6px;overflow:hidden;}
+  .bar-row .fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:6px;}
+  .bar-row .v{text-align:right;font-family:'Syne',sans-serif;font-weight:800;font-size:0.9rem;}
   a.back{display:inline-block;margin-bottom:24px;color:var(--accent);text-decoration:none;
     font-size:0.85rem;font-family:'DM Mono',monospace;}
 </style>
@@ -88,13 +98,23 @@
 
   <!-- ════════ Google Analytics ════════ -->
   <h2><span class="ga-dot"></span>サイト分析 (Google Analytics 4)</h2>
-  <div class="ga-note">
-    GA4のアクセスデータ（訪問者数・流入元・人気の検索条件など）は、セキュリティのため
-    Googleの管理画面で確認します。LP・検索アプリ両方に計測タグ
-    <code>G-L1T1CDZ05N</code> を設置済みで、以下のカスタムイベントを記録しています：
-    <code>search</code>（検索）, <code>reserve_room</code>（仮予約）,
-    <code>report_room</code>（使用中報告）, <code>feedback_submit</code>（意見箱）。
+  <div class="kpis" id="ga-kpis"></div>
+
+  <h2 style="font-size:1rem;margin-top:32px;">訪問者・ページビュー推移（過去28日）</h2>
+  <div class="card"><div class="chart-wrap"><canvas id="usersChart"></canvas></div></div>
+
+  <div class="ga-cols">
+    <div>
+      <h2 style="font-size:1rem;">人気の検索条件</h2>
+      <div class="card" id="ga-search"></div>
+    </div>
+    <div>
+      <h2 style="font-size:1rem;">流入元 / イベント数</h2>
+      <div class="card" id="ga-misc"></div>
+    </div>
   </div>
+
+  <h2 style="font-size:1rem;margin-top:32px;">GA4管理画面で詳しく見る</h2>
   <div class="ga-grid">
     <a class="ga-link" href="https://analytics.google.com/analytics/web/#/p0/realtime/overview" target="_blank" rel="noopener">
       <div class="t">リアルタイム</div><div class="d">今この瞬間の同時アクセス数・閲覧中のページ</div>
@@ -192,6 +212,81 @@ function deltaHTML(cur, prev){
         </div>
       </a>`).join('');
   }
+
+  // ════════ GA4 ════════
+  const gaHist = await load('./data/ga4_history.json') || [];
+  const gaBreak = await load('./data/ga4_breakdown.json') || {};
+
+  if (gaHist.length) {
+    const total = (k) => gaHist.reduce((s,h)=> s + (h[k]||0), 0);
+    const last = gaHist[gaHist.length-1] || {};
+    const gaKpis = [
+      {label:'訪問者(28日)', val: total('active_users')},
+      {label:'新規(28日)',   val: total('new_users')},
+      {label:'PV(28日)',     val: total('page_views')},
+      {label:'本日の訪問',   val: last.active_users},
+    ];
+    document.getElementById('ga-kpis').innerHTML = gaKpis.map(k => `
+      <div class="kpi"><div class="label">${k.label}</div>
+        <div class="val">${fmt(k.val)}</div></div>`).join('');
+
+    if (typeof Chart === 'function') {
+      try {
+        new Chart(document.getElementById('usersChart'), {
+          type:'line',
+          data:{labels: gaHist.map(h=>h.date), datasets:[
+            {label:'訪問者', data:gaHist.map(h=>h.active_users), borderColor:'#2563eb',
+             backgroundColor:'rgba(37,99,235,0.1)', fill:true, tension:0.3, pointRadius:2},
+            {label:'ページビュー', data:gaHist.map(h=>h.page_views), borderColor:'#f97316',
+             backgroundColor:'rgba(249,115,22,0.08)', fill:true, tension:0.3, pointRadius:2}
+          ]},
+          options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom'}}}
+        });
+      } catch(e){ console.warn('ga chart failed', e); }
+    }
+  } else {
+    document.getElementById('ga-kpis').innerHTML =
+      '<div class="empty" style="grid-column:1/-1">GA4データはまだありません。<br>「GA4サイト分析を記録」ワークフローを実行すると表示されます。</div>';
+  }
+
+  // 棒リスト生成ヘルパー
+  const BUILDING_JA = {all:'すべて', tower:'タワースコラ', main:'駿河台', funabashi:'船橋'};
+  function barlist(items, valkey, labelFn){
+    if(!items || !items.length) return '';
+    const max = Math.max(...items.map(i=>i[valkey]||0)) || 1;
+    return items.slice(0,8).map(i => {
+      const name = labelFn ? labelFn(i.label) : i.label;
+      const v = i[valkey]||0;
+      return `<div class="bar-row"><span class="name" title="${name}">${name}</span>
+        <span class="track"><span class="fill" style="width:${Math.round(v/max*100)}%"></span></span>
+        <span class="v">${fmt(v)}</span></div>`;
+    }).join('');
+  }
+
+  const searchEl = document.getElementById('ga-search');
+  const sParts = [];
+  if (gaBreak.search_building) sParts.push('<div class="sub">校舎</div>' +
+    barlist(gaBreak.search_building, 'count', l => BUILDING_JA[l] || l));
+  if (gaBreak.search_period) sParts.push('<div class="sub">時限</div>' +
+    barlist(gaBreak.search_period, 'count', l => l + '限'));
+  if (gaBreak.search_day) sParts.push('<div class="sub">曜日</div>' +
+    barlist(gaBreak.search_day, 'count', l => l + '曜'));
+  searchEl.className = 'card barlist';
+  searchEl.innerHTML = sParts.join('') ||
+    '<div class="empty">検索データがまだありません</div>';
+
+  const miscEl = document.getElementById('ga-misc');
+  const mParts = [];
+  if (gaBreak.channels) mParts.push('<div class="sub">流入元（セッション）</div>' +
+    barlist(gaBreak.channels, 'sessions'));
+  if (gaBreak.events) {
+    const EV_JA = {search:'検索', reserve_room:'仮予約', report_room:'使用中報告', feedback_submit:'意見箱'};
+    const evItems = Object.entries(gaBreak.events).map(([k,v]) => ({label:EV_JA[k]||k, count:v}));
+    mParts.push('<div class="sub">イベント発生数</div>' + barlist(evItems, 'count'));
+  }
+  miscEl.className = 'card barlist';
+  miscEl.innerHTML = mParts.join('') ||
+    '<div class="empty">流入/イベントデータがまだありません</div>';
 })();
 </script>
 </body>
