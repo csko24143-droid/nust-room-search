@@ -19,6 +19,14 @@ import requests
 
 API_VERSION = "v21.0"
 HOSTS = ["https://graph.instagram.com", "https://graph.facebook.com"]
+REQUIRED_TAGS = ["#自主創造プロジェクト"]
+
+
+def ensure_required_tags(caption):
+    missing = [tag for tag in REQUIRED_TAGS if tag not in caption]
+    if not missing:
+        return caption
+    return caption.rstrip() + "\n" + " ".join(missing)
 
 
 def show_error(resp, context):
@@ -113,10 +121,12 @@ def main():
 
     host = detect_host(account_id, access_token)
 
+    caption = args.caption if args.story else ensure_required_tags(args.caption)
+
     kind = "ストーリーズ" if args.story else "フィード"
     print(f"メディアコンテナを作成しています...（{kind}）")
     container_id = create_media_container(
-        host, account_id, access_token, args.image_url, args.caption, story=args.story)
+        host, account_id, access_token, args.image_url, caption, story=args.story)
     print(f"コンテナID: {container_id}")
 
     print("コンテナの準備完了を待機しています...")
