@@ -3,13 +3,21 @@ name: Instagramへ投稿
 on:
   workflow_dispatch:
     inputs:
+      post_type:
+        description: "投稿の種類"
+        required: true
+        type: choice
+        default: "feed"
+        options:
+          - feed
+          - story
       image_url:
         description: "投稿する画像の公開URL（https://...）"
         required: true
         type: string
       caption:
-        description: "投稿のキャプション（ハッシュタグ含む）"
-        required: true
+        description: "キャプション（フィードのみ・ストーリーズでは無視されます）"
+        required: false
         type: string
 
 jobs:
@@ -30,6 +38,12 @@ jobs:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           IG_ACCOUNT_ID: ${{ secrets.IG_ACCOUNT_ID }}
         run: |
-          python scripts/post_to_instagram.py \
-            --image-url "${{ inputs.image_url }}" \
-            --caption "${{ inputs.caption }}"
+          if [ "${{ inputs.post_type }}" = "story" ]; then
+            python scripts/post_to_instagram.py \
+              --image-url "${{ inputs.image_url }}" \
+              --story
+          else
+            python scripts/post_to_instagram.py \
+              --image-url "${{ inputs.image_url }}" \
+              --caption "${{ inputs.caption }}"
+          fi
