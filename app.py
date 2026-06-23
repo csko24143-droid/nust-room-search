@@ -487,6 +487,12 @@ HTML_TEMPLATE = """
         .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 0.9rem; }
         .empty-state .icon { font-size: 2.5rem; display: block; margin-bottom: 10px; }
 
+        /* ── 公式サービスとの誤認防止のための常設表記 ── */
+        .compliance-footer {
+            margin-top: 24px; padding: 16px 0 32px;
+            font-size: 0.7rem; color: var(--muted); text-align: center; line-height: 1.6;
+        }
+
         /* ── 使い方フッター ── */
         .help-footer {
             margin-top: 40px; padding-top: 24px;
@@ -732,6 +738,13 @@ HTML_TEMPLATE = """
                     <div class="help-text-desc">時間割に登録されていないゲリラ授業や急遽変更が行われている場合があります。実際に入室する前に、ドア越しに確認することをおすすめします。本システムは日大理工学部の学生が自主的に開発・運営しています。</div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- 公式サービスとの誤認防止のための常設表記 -->
+    <div class="wrap">
+        <div class="compliance-footer">
+            © 2026 RoomRadar — 日本大学「自主創造プロジェクト」の一環として理工学部の学生が開発・運営しています。本サービスは大学公式のものではありません。
         </div>
     </div>
 
