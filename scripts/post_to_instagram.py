@@ -19,7 +19,8 @@ import requests
 
 API_VERSION = "v21.0"
 HOSTS = ["https://graph.instagram.com", "https://graph.facebook.com"]
-REQUIRED_TAGS = ["#自主創造プロジェクト"]
+# 自主創造プロジェクトのレギュレーションで学外SNS発信時の使用が義務付けられた共通ハッシュタグ
+REQUIRED_TAGS = ["#日大生プロジェクト"]
 
 
 def ensure_required_tags(caption):
