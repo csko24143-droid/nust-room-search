@@ -1,31 +1,11 @@
 [
   {
-    "date": "2026-06-17",
-    "followers_count": 20,
-    "follows_count": 3,
-    "media_count": 7,
-    "reach": 7,
-    "profile_views": 25,
-    "accounts_engaged": 0,
-    "total_interactions": 0
-  },
-  {
-    "date": "2026-06-18",
-    "followers_count": 20,
-    "follows_count": 3,
-    "media_count": 7,
-    "reach": 11,
-    "profile_views": 40,
-    "accounts_engaged": 0,
-    "total_interactions": 0
-  },
-  {
     "date": "2026-06-22",
     "followers_count": 21,
-    "follows_count": 3,
-    "media_count": 7,
-    "reach": 3,
-    "profile_views": 21,
+    "follows_count": 4,
+    "media_count": 9,
+    "reach": 13,
+    "profile_views": 14,
     "accounts_engaged": 0,
     "total_interactions": 0
   }

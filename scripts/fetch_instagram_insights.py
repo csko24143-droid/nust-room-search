@@ -141,7 +141,7 @@ def main():
             "permalink": m.get("permalink"),
             "media_type": m.get("media_type"),
             "thumbnail": m.get("thumbnail_url") or m.get("media_url"),
-            "caption": (m.get("caption") or "")[:120],
+            "caption": m.get("caption") or "",
             "timestamp": m.get("timestamp"),
             "like_count": m.get("like_count"),
             "comments_count": m.get("comments_count"),

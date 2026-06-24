@@ -3,14 +3,30 @@ name: Instagramへ投稿
 on:
   workflow_dispatch:
     inputs:
+      post_type:
+        description: "投稿の種類"
+        required: true
+        type: choice
+        default: "feed"
+        options:
+          - feed
+          - story
       image_url:
         description: "投稿する画像の公開URL（https://...）"
         required: true
         type: string
       caption:
-        description: "投稿のキャプション（ハッシュタグ含む）"
-        required: true
+        description: "キャプション（フィードのみ・ストーリーズでは無視されます）"
+        required: false
         type: string
+      also_story:
+        description: "フィード投稿時、告知ストーリーズも同時に投稿する"
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
 
 jobs:
   post:
@@ -30,6 +46,48 @@ jobs:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           IG_ACCOUNT_ID: ${{ secrets.IG_ACCOUNT_ID }}
         run: |
-          python scripts/post_to_instagram.py \
-            --image-url "${{ inputs.image_url }}" \
-            --caption "${{ inputs.caption }}"
+          if [ "${{ inputs.post_type }}" = "story" ]; then
+            python scripts/post_to_instagram.py \
+              --image-url "${{ inputs.image_url }}" \
+              --story
+          else
+            python scripts/post_to_instagram.py \
+              --image-url "${{ inputs.image_url }}" \
+              --caption "${{ inputs.caption }}"
+          fi
+
+      # フィード投稿時のみ、その投稿を告知するストーリーズを生成して同時投稿する
+      - name: Install Playwright (for promo story)
+        if: ${{ inputs.post_type == 'feed' && inputs.also_story }}
+        run: |
+          pip install playwright
+          playwright install --with-deps chromium
+
+      - name: Generate promo story image
+        if: ${{ inputs.post_type == 'feed' && inputs.also_story }}
+        run: |
+          mkdir -p assets/instagram/auto
+          python scripts/make_story_promo.py \
+            --feed-image-url "${{ inputs.image_url }}" \
+            --out assets/instagram/auto/latest-story.png
+
+      - name: Commit promo story image
+        if: ${{ inputs.post_type == 'feed' && inputs.also_story }}
+        id: commit_story
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add assets/instagram/auto/latest-story.png
+          git commit -m "chore: generate promo story image for latest post"
+          git push
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Post promo story to Instagram
+        if: ${{ inputs.post_type == 'feed' && inputs.also_story }}
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_ACCOUNT_ID: ${{ secrets.IG_ACCOUNT_ID }}
+        run: |
+          # コミットSHA固定のraw URLを使い、キャッシュによる古い画像配信を防ぐ
+          URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ steps.commit_story.outputs.sha }}/assets/instagram/auto/latest-story.png"
+          python scripts/post_to_instagram.py --image-url "$URL" --story
