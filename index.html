@@ -93,16 +93,14 @@ body.lang-zh .hero-title .small{ font-size: 0.38em; letter-spacing: 0.02em; }
    セクションナビバー（Apple風）
 ════════════════════════════════════════════ */
 .section-nav {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 99;
+  position: absolute; top: 0; left: 0; right: 0; z-index: 99;
   display: flex; align-items: center; justify-content: space-between;
   height: 56px; padding: 0 20px;
   background: rgba(245,243,238,0.72);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   backdrop-filter: saturate(180%) blur(20px);
   border-bottom: 1px solid rgba(26,24,20,0.06);
-  transition: background 0.3s ease, box-shadow 0.3s ease;
 }
-.section-nav.scrolled { box-shadow: 0 1px 16px rgba(0,0,0,0.06); }
 .nav-logo { display: flex; align-items: center; flex: 1; min-width: 0; }
 .nav-logo img {
   height: 38px; width: auto; display: block;
@@ -121,7 +119,6 @@ body.lang-zh .hero-title .small{ font-size: 0.38em; letter-spacing: 0.02em; }
 .nav-links a:hover { color: var(--ink); background: rgba(26,24,20,0.05); }
 .nav-links a.active { color: var(--accent); }
 .nav-right { flex: 1; display: flex; justify-content: flex-end; }
-section[id], .hero[id] { scroll-margin-top: 64px; }
 @media (max-width: 820px) {
   .section-nav { height: 52px; padding: 0 12px; }
   .nav-logo img { height: 32px; }
@@ -134,7 +131,6 @@ section[id], .hero[id] { scroll-margin-top: 64px; }
   .nav-links::-webkit-scrollbar { display: none; }
   .nav-links a { padding: 6px 9px; font-size: 0.74rem; }
   .lang-btn { padding: 5px 10px; font-size: 0.68rem; }
-  section[id], .hero[id] { scroll-margin-top: 56px; }
 }
 @media (max-width: 520px) {
   .nav-logo { flex: 0 0 auto; }
@@ -1399,36 +1395,6 @@ const observer = new IntersectionObserver(
   { threshold: 0.12 }
 );
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-
-// ════════════════════════════════════════════
-// セクションナビ — スクロール連動ハイライト
-// ════════════════════════════════════════════
-(function () {
-  const nav = document.getElementById('siteNav');
-  const links = Array.from(document.querySelectorAll('.nav-links a'));
-  const byId = {};
-  links.forEach(a => { byId[a.getAttribute('href').slice(1)] = a; });
-  const targets = links
-    .map(a => document.getElementById(a.getAttribute('href').slice(1)))
-    .filter(Boolean);
-
-  // 現在表示中のセクションに対応するリンクを active に
-  const spy = new IntersectionObserver(entries => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        links.forEach(l => l.classList.remove('active'));
-        const link = byId[e.target.id];
-        if (link) link.classList.add('active');
-      }
-    });
-  }, { rootMargin: '-45% 0px -50% 0px', threshold: 0 });
-  targets.forEach(t => spy.observe(t));
-
-  // スクロールでバーに薄い影を付ける
-  const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 8);
-  window.addEventListener('scroll', onScroll, { passive: true });
-  onScroll();
-})();
 
 // ════════════════════════════════════════════
 // ヒーロー — タイプライターキャッチコピー
