@@ -239,6 +239,21 @@ body.lang-zh .hero-title .small{ font-size: 0.38em; letter-spacing: 0.02em; }
 .hero-cta .arrow { font-size: 1.2em; transition: transform 0.2s; }
 .hero-cta:hover .arrow { transform: translateX(4px); }
 
+/* テスト運用・非公式の明示（控えめ表記） */
+.hero-note {
+  display: flex; width: fit-content; align-items: center; gap: 8px; flex-wrap: wrap;
+  justify-content: center; margin: 18px auto 0; max-width: 520px;
+  font-size: 0.72rem; font-weight: 500; color: var(--muted); line-height: 1.5;
+  opacity: 0; animation: fadeUp 0.7s 0.6s ease forwards;
+}
+.hero-note-tag {
+  flex-shrink: 0; font-family: 'Syne', sans-serif; font-weight: 700;
+  font-size: 0.56rem; letter-spacing: 0.1em;
+  background: rgba(26,24,20,0.05); color: var(--muted);
+  border: 1px solid var(--border);
+  padding: 2px 7px; border-radius: 5px;
+}
+
 .hero-stats {
   display: flex; justify-content: center; gap: 32px;
   margin-top: 56px; flex-wrap: wrap;
@@ -940,6 +955,13 @@ footer {
       <span class="arrow">→</span>
     </a>
 
+    <div class="hero-note">
+      <span class="hero-note-tag">TEST</span>
+      <span class="ja">現在テスト運用中の非公式サービスです（学生開発・大学公式ではありません）。</span>
+      <span class="en">Currently in test operation — an unofficial, student-built service, not affiliated with the university.</span>
+      <span class="zh">目前为测试运营中的非官方服务（学生开发，非大学官方）。</span>
+    </div>
+
     <div class="hero-stats">
       <div class="stat">
         <div class="stat-num" data-count="46"><span class="num">0</span><span>+</span></div>
@@ -1374,9 +1396,9 @@ footer {
 
 <!-- フッター -->
 <footer>
-  <span class="ja">© 2026 RoomRadar — 日本大学理工学部 学生プロジェクト. このサービスは大学公式のものではありません。</span>
-  <span class="en">© 2026 RoomRadar — Nihon University CST Student Project. This is not an official university service.</span>
-  <span class="zh">© 2026 RoomRadar — 日本大学理工学部学生项目。本服务非大学官方服务。</span>
+  <span class="ja">© 2026 RoomRadar — 日本大学理工学部 学生プロジェクト. このサービスは大学公式のものではなく、現在テスト運用中です。</span>
+  <span class="en">© 2026 RoomRadar — Nihon University CST Student Project. This is an unofficial service, currently in test operation.</span>
+  <span class="zh">© 2026 RoomRadar — 日本大学理工学部学生项目。本服务非大学官方服务，目前为测试运营中。</span>
 </footer>
 
 <script>
