@@ -24,6 +24,11 @@
     background:rgba(37,99,235,0.08);border:1px solid rgba(37,99,235,0.2);
     padding:4px 12px;border-radius:99px;}
   .updated{color:var(--muted);font-size:0.8rem;font-family:'DM Mono',monospace;margin-bottom:36px;}
+  .test-note{display:flex;align-items:center;gap:9px;margin-bottom:24px;
+    font-size:0.72rem;color:var(--muted);line-height:1.5;}
+  .test-note .tag{flex-shrink:0;font-family:'Syne',sans-serif;font-weight:700;font-size:0.56rem;
+    letter-spacing:0.1em;background:rgba(26,24,20,0.05);color:var(--muted);
+    border:1px solid var(--border);padding:3px 7px;border-radius:5px;}
   h2{font-family:'Syne',sans-serif;font-weight:700;font-size:1.25rem;margin:44px 0 18px;
     display:flex;align-items:center;gap:10px;}
   h2 .ig-dot{width:18px;height:18px;border-radius:5px;
@@ -80,6 +85,10 @@
   <div class="head">
     <h1>アナリティクス</h1>
     <span class="badge">RoomRadar Analytics</span>
+  </div>
+  <div class="test-note">
+    <span class="tag">TEST</span>
+    <span>テスト運用中の非公式サービスです（学生開発・大学公式ではありません）。本ページは運営チーム用です。</span>
   </div>
   <div class="updated" id="updated">データ読み込み中…</div>
 

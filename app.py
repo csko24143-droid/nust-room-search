@@ -493,6 +493,21 @@ HTML_TEMPLATE = """
             font-size: 0.7rem; color: var(--muted); text-align: center; line-height: 1.6;
         }
 
+        /* ── テスト運用・非公式の控えめ表記 ── */
+        .test-banner {
+            display: flex; align-items: center; gap: 8px;
+            margin-bottom: 20px;
+            font-size: 0.72rem; color: var(--muted); line-height: 1.5;
+        }
+        .test-tag {
+            flex-shrink: 0; font-family: 'Syne', sans-serif; font-weight: 700;
+            font-size: 0.56rem; letter-spacing: 0.1em;
+            background: var(--surface2); color: var(--muted);
+            border: 1px solid var(--border);
+            padding: 3px 7px; border-radius: 5px;
+        }
+        .test-banner strong { color: #9a9ab0; font-weight: 600; }
+
         /* ── 使い方フッター ── */
         .help-footer {
             margin-top: 40px; padding-top: 24px;
@@ -525,6 +540,12 @@ HTML_TEMPLATE = """
 </head>
 <body>
 <div class="wrap">
+
+    <!-- テスト運用・非公式の明示（誤認防止・控えめ表記） -->
+    <div class="test-banner">
+        <span class="test-tag">TEST</span>
+        <span><strong>テスト運用中</strong>の非公式サービスです（学生開発・大学公式ではありません）。</span>
+    </div>
 
     <!-- ヘッダー -->
     <header>
@@ -744,7 +765,7 @@ HTML_TEMPLATE = """
     <!-- 公式サービスとの誤認防止のための常設表記 -->
     <div class="wrap">
         <div class="compliance-footer">
-            © 2026 RoomRadar — 日本大学「自主創造プロジェクト」の一環として理工学部の学生が開発・運営しています。本サービスは大学公式のものではありません。
+            © 2026 RoomRadar — 日本大学「自主創造プロジェクト」の一環として理工学部の学生が開発・運営しています。本サービスは大学公式のものではなく、現在テスト運用中です。学内での正式な提供については調整中です。
         </div>
     </div>
 
