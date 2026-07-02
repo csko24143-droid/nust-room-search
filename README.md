@@ -1,0 +1,59 @@
+# RoomRadar 📡
+
+日本大学理工学部の**空き教室リアルタイム検索サービス**。
+曜日・時限・校舎を選ぶだけで、時間割データをもとに授業が入っていない教室を表示します。
+
+> ⚠️ 本サービスは**テスト運用中の非公式サービス**です。日本大学「自主創造プロジェクト」の一環として学生が開発・運営しており、大学公式のものではありません。
+
+## リンク
+
+| | URL |
+|---|---|
+| 検索アプリ | https://nust-room-search.onrender.com |
+| ランディングページ | https://csko24143-droid.github.io/nust-room-search/ |
+| Instagram | https://www.instagram.com/roomradar_nust/ |
+
+## 構成
+
+```
+├── app.py                  # 検索アプリ本体（Flask・Render でホスティング）
+├── index.html              # ランディングページ（GitHub Pages）
+├── dashboard.html          # 運営チーム用アナリティクス画面（GitHub Pages）
+├── schedule_final.db       # 時間割データベース（検索の元データ）
+├── rr_logo.png             # ロゴ（LP から参照）
+├── requirements.txt
+│
+├── data/
+│   ├── source/             # 時間割の元データ（xlsx）
+│   ├── instagram_*.json    # Instagram インサイト集計（ワークフローが自動更新）
+│   └── ga4_*.json          # GA4 サイト分析集計（ワークフローが自動更新）
+│
+├── assets/
+│   ├── instagram/          # Instagram 投稿・ストーリーズ用画像
+│   │   └── auto/           # 自動生成されたプロモストーリー画像
+│   ├── posters/            # 学内掲示用ポスター（PNG / PDF / PPTX）
+│   │   └── handoff/        # 外部デザインツール用素材（ロゴ・QR）
+│   └── instagram-qr.png    # LP に表示する Instagram QR
+│
+├── scripts/
+│   ├── post_to_instagram.py        # フィード / ストーリーズ投稿（必須タグ自動付与）
+│   ├── make_story_promo.py         # 新規投稿の告知ストーリー画像生成
+│   ├── fetch_instagram_insights.py # インサイト取得 → data/ へ記録
+│   ├── fetch_instagram_posts.py    # 投稿一覧取得
+│   └── fetch_ga4_metrics.py        # GA4 指標取得 → data/ へ記録
+│
+└── .github/workflows/
+    ├── instagram-post.yml      # 手動トリガーで投稿（feed / story 選択・同時ストーリー可）
+    ├── instagram-insights.yml  # 週2回 インサイト記録（月・木）
+    ├── instagram-fetch.yml     # 投稿データ取得
+    └── ga4-fetch.yml           # 週2回 GA4 記録（月・木）
+```
+
+## 運用メモ
+
+- `reservations.db` / `reports.db`（仮予約・使用中報告）は実行時に自動生成される揮発データで、リポジトリには含めません。
+- Instagram 投稿キャプションには規定の共通ハッシュタグ `#日大生プロジェクト` がスクリプトで自動付与されます。
+- ポスター類の再生成手順・デザイン調整はセッション内スクリプト（Playwright レンダリング）で行っています。
+
+---
+日本大学自主創造プロジェクト ／ #日大生プロジェクト
