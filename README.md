@@ -37,6 +37,7 @@
 │
 ├── scripts/
 │   ├── post_to_instagram.py        # フィード / ストーリーズ投稿（必須タグ自動付与）
+│   ├── make_poster.py              # 学内掲示ポスター生成（PNG/PDF/PPTX・variant切替）
 │   ├── make_story_promo.py         # 新規投稿の告知ストーリー画像生成
 │   ├── fetch_instagram_insights.py # インサイト取得 → data/ へ記録
 │   ├── fetch_instagram_posts.py    # 投稿一覧取得
@@ -53,7 +54,8 @@
 
 - `reservations.db` / `reports.db`（仮予約・使用中報告）は実行時に自動生成される揮発データで、リポジトリには含めません。
 - Instagram 投稿キャプションには規定の共通ハッシュタグ `#日大生プロジェクト` がスクリプトで自動付与されます。
-- ポスター類の再生成手順・デザイン調整はセッション内スクリプト（Playwright レンダリング）で行っています。
+- ポスターは `python scripts/make_poster.py --print-files` で再生成できます（A4縦・約392dpi、PDF/PPTX同時出力）。
+- Claude Code on the web では `.claude/hooks/session-start.sh` がセッション開始時に依存パッケージを自動インストールします。
 
 ---
 日本大学自主創造プロジェクト ／ #日大生プロジェクト
