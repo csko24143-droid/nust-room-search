@@ -45,15 +45,18 @@ jobs:
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           IG_ACCOUNT_ID: ${{ secrets.IG_ACCOUNT_ID }}
+          # 入力はシェルに直接展開せず環境変数経由で渡す（インジェクション対策）
+          IMAGE_URL: ${{ inputs.image_url }}
+          CAPTION: ${{ inputs.caption }}
         run: |
           if [ "${{ inputs.post_type }}" = "story" ]; then
             python scripts/post_to_instagram.py \
-              --image-url "${{ inputs.image_url }}" \
+              --image-url "$IMAGE_URL" \
               --story
           else
             python scripts/post_to_instagram.py \
-              --image-url "${{ inputs.image_url }}" \
-              --caption "${{ inputs.caption }}"
+              --image-url "$IMAGE_URL" \
+              --caption "$CAPTION"
           fi
 
       # フィード投稿時のみ、その投稿を告知するストーリーズを生成して同時投稿する
@@ -65,10 +68,12 @@ jobs:
 
       - name: Generate promo story image
         if: ${{ inputs.post_type == 'feed' && inputs.also_story }}
+        env:
+          IMAGE_URL: ${{ inputs.image_url }}
         run: |
           mkdir -p assets/instagram/auto
           python scripts/make_story_promo.py \
-            --feed-image-url "${{ inputs.image_url }}" \
+            --feed-image-url "$IMAGE_URL" \
             --out assets/instagram/auto/latest-story.png
 
       - name: Commit promo story image
@@ -78,8 +83,13 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add assets/instagram/auto/latest-story.png
-          git commit -m "chore: generate promo story image for latest post"
-          git push
+          # 生成画像が前回と同一の場合は空コミットで失敗させない
+          if git diff --staged --quiet; then
+            echo "画像に変更なし（既存コミットのSHAを使用）"
+          else
+            git commit -m "chore: generate promo story image for latest post"
+            git push
+          fi
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Post promo story to Instagram

@@ -3,6 +3,9 @@ name: Instagram投稿一覧を取得
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   fetch:
     runs-on: ubuntu-latest

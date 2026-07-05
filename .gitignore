@@ -5,3 +5,9 @@ reports.db
 # Python
 __pycache__/
 *.pyc
+.venv/
+venv/
+
+# OS / editor
+.DS_Store
+Thumbs.db
