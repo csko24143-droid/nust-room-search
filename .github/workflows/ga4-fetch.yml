@@ -1,10 +1,13 @@
 name: GA4サイト分析を記録
 
 on:
+  # 自動実行(スケジュール)は停止中。GA4シークレット(GA4_PROPERTY_ID / GA4_SA_KEY)が
+  # 未設定で毎回失敗していたため、cronを無効化。手動実行のみ残す。
+  # シークレットを設定したら、下のscheduleブロックを復活させれば自動実行が戻る。
   workflow_dispatch:
-  schedule:
-    # 週2回 月・木 JST 09:10 (UTC 00:10) に実行
-    - cron: "10 0 * * 1,4"
+  # schedule:
+  #   # 週2回 月・木 JST 09:10 (UTC 00:10) に実行
+  #   - cron: "10 0 * * 1,4"
 
 permissions:
   contents: write
