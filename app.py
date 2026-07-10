@@ -321,6 +321,31 @@ HTML_TEMPLATE = """
         }
         .count-chip em { color: var(--accent); font-style: normal; }
 
+        /* ── 検索フィードバック（更新が分かるように） ── */
+        .btn-search.loading { pointer-events: none; }
+        .btn-search .btn-in { display: inline-flex; align-items: center; justify-content: center; gap: 9px; }
+        .btn-search .spinner {
+            width: 15px; height: 15px; border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.45); border-top-color: #fff;
+            display: none; animation: btnspin 0.7s linear infinite;
+        }
+        .btn-search.loading .spinner { display: inline-block; }
+        @keyframes btnspin { to { transform: rotate(360deg); } }
+
+        .result-meta { scroll-margin-top: 18px; border-radius: 12px; }
+        @keyframes resultFlash {
+            0%   { box-shadow: 0 0 0 0 rgba(108,143,255,0); background: rgba(108,143,255,0); }
+            18%  { box-shadow: 0 0 0 3px rgba(108,143,255,0.45); background: rgba(108,143,255,0.14); }
+            100% { box-shadow: 0 0 0 0 rgba(108,143,255,0); background: rgba(108,143,255,0); }
+        }
+        .result-meta.flash { padding: 8px 12px; margin: -8px -12px 6px; animation: resultFlash 1.8s ease-out; }
+        @keyframes chipPop {
+            0%   { transform: scale(1);    box-shadow: 0 0 0 0 rgba(108,143,255,0); }
+            30%  { transform: scale(1.2);  box-shadow: 0 0 0 5px rgba(108,143,255,0.35); }
+            100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(108,143,255,0); }
+        }
+        .count-chip.pop { animation: chipPop 0.8s ease-out; }
+
         /* ── 校舎セクション ── */
         .building-section { margin-bottom: 20px; }
         .building-label {
@@ -593,7 +618,7 @@ HTML_TEMPLATE = """
                             </select>
                         </div>
                     </div>
-                    <button type="submit" class="btn-search">空き教室を検索</button>
+                    <button type="submit" class="btn-search" id="btn-search"><span class="btn-in"><span class="spinner"></span><span class="btn-text">空き教室を検索</span></span></button>
                 </form>
             </div>
         </div><!-- /sidebar -->
@@ -612,9 +637,9 @@ HTML_TEMPLATE = """
                 <span class="disclaimer-icon">⚠</span>
                 <span>時間割に登録されていないゲリラ授業・急遽変更が行われている場合があります。実際に教室を使用する前に、ドア越しに確認することをおすすめします。</span>
             </div>
-            <div class="result-meta">
+            <div class="result-meta" id="result-meta">
                 <span class="result-label">{{ selected_day }}曜 {{ selected_period }}限 の空き教室</span>
-                <span class="count-chip"><em>{{ empty_rooms|length }}</em> 室</span>
+                <span class="count-chip" id="count-chip"><em>{{ empty_rooms|length }}</em> 室</span>
             </div>
 
             {% if empty_rooms %}
@@ -863,8 +888,31 @@ updateClock();
                 search_building: form.building.value
             });
         }
+        // 押した瞬間のローディング表示（更新されることを明示）
+        const btn = document.getElementById('btn-search');
+        if (btn) {
+            btn.classList.add('loading');
+            const tx = btn.querySelector('.btn-text');
+            if (tx) tx.textContent = '検索中…';
+        }
     });
 })();
+
+// ── 検索後：結果へスクロール＋強調＋トースト（更新に気づけるように） ──
+{% if searched and not error_message %}
+window.addEventListener('load', function() {
+    const meta = document.getElementById('result-meta');
+    if (meta) {
+        meta.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(function() {
+            meta.classList.add('flash');
+            const chip = document.getElementById('count-chip');
+            if (chip) chip.classList.add('pop');
+        }, 380);
+    }
+    showToast('✓ 検索しました — {{ empty_rooms|length }}室');
+});
+{% endif %}
 
 // ── 仮予約モーダル ──
 let currentRoom = '', currentBuilding = '';
