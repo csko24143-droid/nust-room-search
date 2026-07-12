@@ -8,13 +8,13 @@
 使い方:
   python scripts/make_poster.py                       # 正式版 → assets/posters/roomradar-poster-pro.png
   python scripts/make_poster.py --print-files         # PNGに加えPDF/PPTXも出力
-  python scripts/make_poster.py --variant shizuka --out /tmp/poster-shizuka.png
+  python scripts/make_poster.py --variant shizuka --out assets/posters/roomradar-poster-shizuka.png
 
 必要パッケージ: qrcode, pillow, playwright, python-pptx（--print-files時）
 素材: rr_logo.png / assets/posters/handoff/{app-phone-screenshot,qr-instagram-branded}.png
 
-注意: 静か版はネタ文言を含む仮バージョン。リポジトリへコミットするのは
-正式版の成果物のみとする運用（静か版は /tmp などへ出力する）。
+注意: 静か版はネタ文言を含む仮バージョン。掲示先での運用判断のため、成果物は
+assets/posters/roomradar-poster-shizuka.{png,pdf,pptx} としてリポジトリに保存している。
 """
 import argparse
 import base64

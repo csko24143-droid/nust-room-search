@@ -25,7 +25,7 @@
 
 ## ポスター
 
-- 生成: `python scripts/make_poster.py`（正式版）／`--variant shizuka`（ネタ文言の仮版・**リポジトリにコミットしない**）。
+- 生成: `python scripts/make_poster.py`（正式版）／`--variant shizuka`（ネタ文言の仮版）。静か版も掲示運用のため `assets/posters/roomradar-poster-shizuka.{png,pdf,pptx}` としてコミット済み。
 - `--print-files` でPDF/PPTX（A4縦・約392dpi）も出力。成果物は `assets/posters/` に置く。
 - 必須要素: ロゴ・LP QR・Instagram QR（ブランドQR）・「日本大学自主創造プロジェクト」・`#日大生プロジェクト`・TEST表記。
 - アプリ画面のスクショを更新する場合: ローカルでapp.pyを起動し、Playwright（390x844, dsf=3）で撮影して `assets/posters/handoff/app-phone-screenshot.png` を差し替え。
