@@ -26,7 +26,7 @@ from qrcode.constants import ERROR_CORRECT_H
 from playwright.sync_api import sync_playwright
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-LP_URL = "https://csko24143-droid.github.io/nust-room-search/"
+LP_URL = "https://nu-roomradar.github.io/nust-room-search/"
 CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
 
 LOGO_PATH = ROOT / "rr_logo.png"
@@ -249,7 +249,7 @@ def build_html(variant):
     <div class="row">
       <span class="org">日本大学自主創造プロジェクト</span>
       <span class="hash">#日大生プロジェクト</span>
-      <span class="url">csko24143-droid.github.io/nust-room-search</span>
+      <span class="url">nu-roomradar.github.io/nust-room-search</span>
     </div>
   </div>
 </body></html>"""

@@ -10,7 +10,7 @@
 | | URL |
 |---|---|
 | 検索アプリ | https://nust-room-search.onrender.com |
-| ランディングページ | https://csko24143-droid.github.io/nust-room-search/ |
+| ランディングページ | https://nu-roomradar.github.io/nust-room-search/ |
 | Instagram | https://www.instagram.com/roomradar_nust/ |
 
 ## 構成

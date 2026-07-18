@@ -5,7 +5,7 @@
 ## 構成と配信先
 
 - `app.py` — Flask検索アプリ本体。**Render**（https://nust-room-search.onrender.com ）でホスティング。mainへのpushで自動デプロイ。
-- `index.html` / `dashboard.html` — LPと運営用アナリティクス。**GitHub Pages**（https://csko24143-droid.github.io/nust-room-search/ ）で配信。
+- `index.html` / `dashboard.html` — LPと運営用アナリティクス。**GitHub Pages**（https://nu-roomradar.github.io/nust-room-search/ ）で配信。
 - `schedule_final.db` — 時間割DB（検索の元データ）。`data/source/*.xlsx` が原本。
 - `reservations.db` / `reports.db` — 実行時に自動生成される揮発データ。**コミットしない**（.gitignore済み）。
 - `data/*.json` — Instagram/GA4の集計。GitHub Actionsが自動更新するため、手元と競合したら基本的に新しい方（項目が多い方）を採用。
