@@ -8,13 +8,13 @@
 使い方:
   python scripts/make_poster.py                       # 正式版 → assets/posters/roomradar-poster-pro.png
   python scripts/make_poster.py --print-files         # PNGに加えPDF/PPTXも出力
-  python scripts/make_poster.py --variant shizuka --out /tmp/poster-shizuka.png
+  python scripts/make_poster.py --variant shizuka --out assets/posters/roomradar-poster-shizuka.png
 
 必要パッケージ: qrcode, pillow, playwright, python-pptx（--print-files時）
 素材: rr_logo.png / assets/posters/handoff/{app-phone-screenshot,qr-instagram-branded}.png
 
-注意: 静か版はネタ文言を含む仮バージョン。リポジトリへコミットするのは
-正式版の成果物のみとする運用（静か版は /tmp などへ出力する）。
+注意: 静か版はネタ文言を含む仮バージョン。掲示先での運用判断のため、成果物は
+assets/posters/roomradar-poster-shizuka.{png,pdf,pptx} としてリポジトリに保存している。
 """
 import argparse
 import base64
@@ -26,7 +26,7 @@ from qrcode.constants import ERROR_CORRECT_H
 from playwright.sync_api import sync_playwright
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-LP_URL = "https://csko24143-droid.github.io/nust-room-search/"
+LP_URL = "https://nu-roomradar.github.io/nust-room-search/"
 CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
 
 LOGO_PATH = ROOT / "rr_logo.png"
@@ -249,7 +249,7 @@ def build_html(variant):
     <div class="row">
       <span class="org">日本大学自主創造プロジェクト</span>
       <span class="hash">#日大生プロジェクト</span>
-      <span class="url">csko24143-droid.github.io/nust-room-search</span>
+      <span class="url">nu-roomradar.github.io/nust-room-search</span>
     </div>
   </div>
 </body></html>"""

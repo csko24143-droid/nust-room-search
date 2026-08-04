@@ -574,7 +574,7 @@ HTML_TEMPLATE = """
 
     <!-- ヘッダー -->
     <header>
-        <a href="https://csko24143-droid.github.io/nust-room-search/" class="logo-link"><div class="logo">RoomRadar <span>β</span></div></a>
+        <a href="https://nu-roomradar.github.io/nust-room-search/" class="logo-link"><div class="logo">RoomRadar <span>β</span></div></a>
         <div class="subtitle">日大理工学部 · 空き教室リアルタイム検索</div>
         <div class="now-badge">
             <span class="dot"></span>

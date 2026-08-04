@@ -5,7 +5,7 @@
 ## 構成と配信先
 
 - `app.py` — Flask検索アプリ本体。**Render**（https://nust-room-search.onrender.com ）でホスティング。mainへのpushで自動デプロイ。
-- `index.html` / `dashboard.html` — LPと運営用アナリティクス。**GitHub Pages**（https://csko24143-droid.github.io/nust-room-search/ ）で配信。
+- `index.html` / `dashboard.html` — LPと運営用アナリティクス。**GitHub Pages**（https://nu-roomradar.github.io/nust-room-search/ ）で配信。
 - `schedule_final.db` — 時間割DB（検索の元データ）。`data/source/*.xlsx` が原本。
 - `reservations.db` / `reports.db` — 実行時に自動生成される揮発データ。**コミットしない**（.gitignore済み）。
 - `data/*.json` — Instagram/GA4の集計。GitHub Actionsが自動更新するため、手元と競合したら基本的に新しい方（項目が多い方）を採用。
@@ -25,7 +25,7 @@
 
 ## ポスター
 
-- 生成: `python scripts/make_poster.py`（正式版）／`--variant shizuka`（ネタ文言の仮版・**リポジトリにコミットしない**）。
+- 生成: `python scripts/make_poster.py`（正式版）／`--variant shizuka`（ネタ文言の仮版）。静か版も掲示運用のため `assets/posters/roomradar-poster-shizuka.{png,pdf,pptx}` としてコミット済み。
 - `--print-files` でPDF/PPTX（A4縦・約392dpi）も出力。成果物は `assets/posters/` に置く。
 - 必須要素: ロゴ・LP QR・Instagram QR（ブランドQR）・「日本大学自主創造プロジェクト」・`#日大生プロジェクト`・TEST表記。
 - アプリ画面のスクショを更新する場合: ローカルでapp.pyを起動し、Playwright（390x844, dsf=3）で撮影して `assets/posters/handoff/app-phone-screenshot.png` を差し替え。
