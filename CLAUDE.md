@@ -4,7 +4,8 @@
 
 ## 構成と配信先
 
-- `app.py` — Flask検索アプリ本体。**Render**（https://nust-room-search.onrender.com ）でホスティング。mainへのpushで自動デプロイ。
+- リポジトリは Organization **`nu-roomradar`** 所有（2026-08、個人アカウント名がLPのURLに露出していたため移管）。
+- `app.py` — Flask検索アプリ本体。**Render**（https://nust-room-search.onrender.com ）でホスティング。mainへのpushで自動デプロイ。Renderの参照元は `nu-roomradar/nust-room-search` の `main`。
 - `index.html` / `dashboard.html` — LPと運営用アナリティクス。**GitHub Pages**（https://nu-roomradar.github.io/nust-room-search/ ）で配信。
 - `schedule_final.db` — 時間割DB（検索の元データ）。`data/source/*.xlsx` が原本。
 - `reservations.db` / `reports.db` — 実行時に自動生成される揮発データ。**コミットしない**（.gitignore済み）。
@@ -22,6 +23,8 @@
 - 投稿は `.github/workflows/instagram-post.yml` を workflow_dispatch で実行（`post_type`: feed/story、`also_story`: フィード投稿と同時に告知ストーリーを自動生成・投稿）。
 - 画像URLはブランチ/コミットSHA固定のraw URL（`https://raw.githubusercontent.com/...`）を渡す。投稿前に `curl | md5sum` でキャッシュ齟齬がないか確認すると安全。
 - 公開済み投稿のキャプションはAPIでは編集・削除不可（手動のみ）。
+- secretsは `IG_ACCESS_TOKEN` / `IG_ACCOUNT_ID` の2つ。**長期アクセストークンは約60日で失効する**ので、投稿・集計が急に失敗し出したらまずトークンの期限を疑う。Meta for Developers のアプリ設定（Instagram → API設定）で再発行する。
+- お見舞い・追悼など弔事のストーリーは、QR・LPリンク・CTA・ハッシュタグ・絵文字を一切入れない（`scripts/make_condolence_story.py` が実例）。ブランドカラーも使わず明朝体で組む。
 
 ## ポスター
 
@@ -33,4 +36,6 @@
 ## 検証
 
 - 画面系の変更はPlaywright（`/opt/pw-browsers/chromium-1194/chrome-linux/chrome`）でPC幅とスマホ幅（390px）両方のスクショを撮って目視確認する。
-- アプリ起動: `PORT=5055 python app.py`（DBは自動生成される）。
+- アプリ起動: `PORT=5055 python app.py`（依存は `pip install -r requirements.txt`。debian製 blinker と衝突する場合は `--ignore-installed blinker` を付ける。DBは自動生成される）。
+- **QRを含む成果物を変更したら、必ず実物をデコードして飛び先を確認する**（`cv2.QRCodeDetector().detectAndDecodeMulti()`。PDF/PPTXは埋め込み画像を `pdfimages` / zip展開で取り出してから）。ポスターのLP QRは `make_poster.py` の `LP_URL` から実行時に動的生成、Instagram側は静的画像 `assets/posters/handoff/qr-instagram-branded.png` の埋め込み。
+- この環境からは外部サイト（github.io・onrender.com 等）への到達がプロキシに阻まれる。公開URLの表示確認はユーザーに依頼する。
