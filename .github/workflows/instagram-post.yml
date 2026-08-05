@@ -24,6 +24,10 @@ on:
         required: false
         type: boolean
         default: true
+      story_headline:
+        description: "告知ストーリーの見出し（未入力ならキャプションの1行目を使用）"
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -65,10 +69,16 @@ jobs:
 
       - name: Generate promo story image
         if: ${{ inputs.post_type == 'feed' && inputs.also_story }}
+        env:
+          # 見出しはキャプションの1行目から自動生成される（story_headlineで上書き可）
+          STORY_CAPTION: ${{ inputs.caption }}
+          STORY_HEADLINE: ${{ inputs.story_headline }}
         run: |
           mkdir -p assets/instagram/auto
           python scripts/make_story_promo.py \
             --feed-image-url "${{ inputs.image_url }}" \
+            --caption "$STORY_CAPTION" \
+            ${STORY_HEADLINE:+--headline "$STORY_HEADLINE"} \
             --out assets/instagram/auto/latest-story.png
 
       - name: Commit promo story image
