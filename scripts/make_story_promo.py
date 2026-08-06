@@ -6,12 +6,10 @@
 
 使い方:
   python make_story_promo.py --feed-image-url <公開URL> --out <出力PNGパス>
-  # 見出しは --headline で明示するか、--caption を渡すと投稿内容から自動生成される
-  python make_story_promo.py --feed-image-url <URL> --out <PNG> --caption "$CAPTION"
+  # 見出しは --headline で明示する。省略時は --caption の1行目を使う
+  python make_story_promo.py --feed-image-url <URL> --out <PNG> --headline "🔗 URLが新しくなりました"
 
-見出しの自動生成にはClaude APIを使う（環境変数 ANTHROPIC_API_KEY）。
-キーが無い場合やAPIが失敗した場合は、キャプションの1行目にフォールバックするため、
-投稿自体は止まらない。
+生成した画像は投稿前に必ず目視で確認すること（ワークフローの post_story を参照）。
 
 Instagramの仕様上、API経由のストーリーズには投稿への
 タップ可能なリンクスタンプを付けられないため、画像内の文言で誘導する。
@@ -19,7 +17,6 @@ Instagramの仕様上、API経由のストーリーズには投稿への
 import argparse
 import base64
 import html as html_mod
-import os
 import sys
 import requests
 from playwright.sync_api import sync_playwright
@@ -77,71 +74,13 @@ TEMPLATE = """<!DOCTYPE html>
 </body></html>"""
 
 
-HEADLINE_SYSTEM = """あなたはInstagramの運用担当者です。
-フィード投稿のキャプションを読み、それを告知するストーリーの見出しを1つ作ってください。
-
-条件:
-- 投稿の内容が一目で伝わる、具体的な見出しにする
-- 全角14文字以内。長いと画像からはみ出すため厳守する
-- 文頭に内容に合った絵文字を1つ付ける
-- 「新しい投稿をしました」のような、内容を説明しない汎用的な文言にはしない
-- キャプションの1行目をそのまま写すのではなく、ストーリーの見出しとして最適な長さと言い回しに整える
-- 体言止めまたは「〜しました」程度の簡潔な形にする。説明文にはしない
-- 弔事・お見舞いなど不幸に関する内容の場合は、絵文字を付けず、簡素な表現にする
-
-見出しだけを出力し、前置きや説明、鉤括弧は付けないこと。"""
-
-
 def headline_from_caption(caption):
-    """キャプションの1行目。API未使用時のフォールバック。"""
+    """キャプションの1行目を見出しに使う。ハウススタイル上、冒頭行が必ず見出しになっている。"""
     for line in (caption or "").splitlines():
         line = line.strip()
         if line:
             return line
     return DEFAULT_HEADLINE
-
-
-def generate_headline(caption):
-    """投稿内容をClaudeに読ませて見出しを生成する。
-
-    失敗しても投稿を止めないよう、例外は握りつぶして1行目にフォールバックする。
-    """
-    fallback = headline_from_caption(caption)
-    if not (caption or "").strip():
-        return fallback
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        print("[INFO] ANTHROPIC_API_KEY が未設定のため、キャプションの1行目を見出しに使います。")
-        return fallback
-
-    try:
-        import anthropic
-    except ImportError:
-        print("[WARN] anthropic パッケージが無いため、キャプションの1行目を見出しに使います。",
-              file=sys.stderr)
-        return fallback
-
-    try:
-        client = anthropic.Anthropic()
-        response = client.messages.create(
-            model="claude-opus-5",
-            max_tokens=200,
-            system=HEADLINE_SYSTEM,
-            output_config={"effort": "low"},
-            messages=[{"role": "user", "content": f"<caption>\n{caption}\n</caption>"}],
-        )
-        if response.stop_reason == "refusal":
-            print("[WARN] 見出し生成が拒否されました。キャプションの1行目を使います。", file=sys.stderr)
-            return fallback
-        text = "".join(b.text for b in response.content if b.type == "text").strip()
-        headline = text.splitlines()[0].strip().strip("「」\"'") if text else ""
-        if not headline:
-            print("[WARN] 見出しが空でした。キャプションの1行目を使います。", file=sys.stderr)
-            return fallback
-        return headline
-    except Exception as exc:
-        print(f"[WARN] 見出しの自動生成に失敗（{type(exc).__name__}）。"
-              f"キャプションの1行目を使います。", file=sys.stderr)
-        return fallback
 
 
 # 見出しの級数決定と最終行のハイライトは、ブラウザ上で実測して行う。
@@ -189,12 +128,12 @@ def main():
     parser.add_argument("--feed-image-url", required=True, help="埋め込むフィード画像の公開URL")
     parser.add_argument("--out", required=True, help="出力PNGのパス")
     parser.add_argument("--headline", default=None,
-                        help="ストーリーの見出し。指定するとClaudeによる自動生成をスキップする")
+                        help="ストーリーの見出し（未指定なら --caption の1行目、それも無ければ既定文言）")
     parser.add_argument("--caption", default=None,
-                        help="フィード投稿のキャプション。内容を読んで見出しを自動生成する")
+                        help="フィード投稿のキャプション。1行目を見出しとして使う")
     args = parser.parse_args()
 
-    headline = (args.headline or "").strip() or generate_headline(args.caption)
+    headline = (args.headline or "").strip() or headline_from_caption(args.caption)
     headline = headline.strip() or DEFAULT_HEADLINE
 
     resp = requests.get(args.feed_image_url, timeout=30)

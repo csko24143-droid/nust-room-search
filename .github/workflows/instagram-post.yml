@@ -69,14 +69,13 @@ jobs:
       - name: Install Playwright (for promo story)
         if: ${{ inputs.post_type == 'feed' && inputs.also_story }}
         run: |
-          pip install playwright anthropic
+          pip install playwright
           playwright install --with-deps chromium
 
       - name: Generate promo story image
         if: ${{ inputs.post_type == 'feed' && inputs.also_story }}
         env:
-          # 見出しは投稿内容から自動生成される（story_headlineで上書き可）
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # 見出しは story_headline で指定する。未入力ならキャプションの1行目
           STORY_CAPTION: ${{ inputs.caption }}
           STORY_HEADLINE: ${{ inputs.story_headline }}
         run: |

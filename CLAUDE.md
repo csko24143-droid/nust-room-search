@@ -20,7 +20,9 @@
 
 ## Instagram運用
 
-- 投稿は `.github/workflows/instagram-post.yml` を workflow_dispatch で実行（`post_type`: feed/story、`also_story`: フィード投稿と同時に告知ストーリーを自動生成・投稿）。
+- 投稿は `.github/workflows/instagram-post.yml` を workflow_dispatch で実行（`post_type`: feed/story、`also_story`: 告知ストーリーを生成、`post_story`: 生成した告知ストーリーを投稿）。
+- **ストーリーは画像を目視確認してから投稿する**。告知ストーリーは `also_story` で生成だけ行い、成果物（`promo-story-preview`）をユーザーに見せて確認を取ってから `post_story` を有効にして投稿する。確認前に投稿しない。
+- 告知ストーリーの見出しは `story_headline` で毎回明示する（未入力だとキャプションの1行目がそのまま入り、長すぎて不自然な位置で改行される）。全角14文字程度が収まりの目安。
 - 画像URLはブランチ/コミットSHA固定のraw URL（`https://raw.githubusercontent.com/...`）を渡す。投稿前に `curl | md5sum` でキャッシュ齟齬がないか確認すると安全。
 - 公開済み投稿のキャプションはAPIでは編集・削除不可（手動のみ）。
 - secretsは `IG_ACCESS_TOKEN` / `IG_ACCOUNT_ID` の2つ。**長期アクセストークンは約60日で失効する**ので、投稿・集計が急に失敗し出したらまずトークンの期限を疑う。Meta for Developers のアプリ設定（Instagram → API設定）で再発行する。
