@@ -1,0 +1,55 @@
+name: 運用ヘルスチェック
+
+# 「静かに壊れている」状態（本番ダウン・必須表記の消失・Actions の失敗・トークン失効）を
+# 週1回チェックし、異常があれば Issue を作成/更新、復旧すれば自動で閉じる。
+# 判定は scripts/ops_healthcheck.py（LLM 不要・API キー不要）。
+#
+# 注意: public リポジトリは60日間活動が無いと GitHub がこの schedule も止める。
+#       止まると自分では検知できないので、リポジトリに何らかのコミットを保つこと。
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "結果を表示するだけで Issue に触らない"
+        required: false
+        type: boolean
+        default: false
+  schedule:
+    # 毎週月曜 JST 09:00（UTC 00:00）
+    - cron: "0 0 * * 1"
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+concurrency:
+  group: ops-healthcheck
+  cancel-in-progress: false
+
+jobs:
+  healthcheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run health check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          # 未設定ならトークン確認はスキップされる
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            python scripts/ops_healthcheck.py --dry-run
+          else
+            python scripts/ops_healthcheck.py
+          fi

@@ -12,8 +12,10 @@ CLAUDE.md の指示は Claude への「お願い」でしかなく強制力が�
 判定の基準:
   各フレーズの出現数が「コミット済み（git HEAD）の出現数」を下回ったらブロック（最低でも1つ）。
   → 表記を別の場所へ移す（先に追加してから削除）のは通る。2箇所を1箇所に統合する編集は止まる。
-  → 意図的に減らす／文言を変えるセッションでは ROOMRADAR_GUARD_RELAX=1 を付けて起動すると
-    「最低1つ残っていればよい」判定に緩む。フレーズ自体を変えるときは下の GUARDED も更新する。
+  → 意図的に減らす／文言を変えるセッションでは、空ファイル .claude/guard-relax を置く（gitignore 済み。
+    ウェブセッションでは Claude に作らせる。.claude/ 配下なので権限確認が出る）か、ターミナルなら
+    ROOMRADAR_GUARD_RELAX=1 を付けて起動すると「最低1つ残っていればよい」判定に緩む。
+    フレーズ自体を変えるときは下の GUARDED も更新する。
 
 使い方（.claude/settings.json から呼ばれる）:
   guard-notices.py edit   PreToolUse(Edit|Write) : 編集を適用した後の内容を再現して検査
@@ -46,13 +48,18 @@ RULE_OF = {
     "scripts/make_poster.py": "ポスターの必須要素（#日大生プロジェクト）",
 }
 
-RELAXED = os.environ.get("ROOMRADAR_GUARD_RELAX") == "1"
+RELAX_MARKER = Path(".claude") / "guard-relax"
 
 HOW_TO_CHANGE = (
-    "意図的に減らす・文言を変える場合: ROOMRADAR_GUARD_RELAX=1 を付けて Claude Code を起動すると"
-    "「最低1つ残っていればよい」判定になります。フレーズ自体を変えるときは "
-    ".claude/hooks/guard-notices.py の GUARDED も更新してください。"
+    "意図的に減らす・文言を変える場合: ユーザーの明示的な指示のもとで空ファイル .claude/guard-relax を作ると"
+    "（gitignore 済み・作業後に削除）、そのセッションは「最低1つ残っていればよい」判定になります。"
+    "フレーズ自体を変えるときは .claude/hooks/guard-notices.py の GUARDED も更新してください。"
 )
+
+
+def relaxed(root):
+    """逃げ道: マーカーファイル（ウェブセッション向け）または環境変数（ターミナル起動時）"""
+    return (root / RELAX_MARKER).exists() or os.environ.get("ROOMRADAR_GUARD_RELAX") == "1"
 
 
 def project_dir(payload):
@@ -95,7 +102,7 @@ def head_text(root, key):
 
 def required_counts(root, key):
     """各フレーズに必要な最低出現数。HEAD にある数（最低1）。RELAX 時や HEAD が無いときは1。"""
-    base = None if RELAXED else head_text(root, key)
+    base = None if relaxed(root) else head_text(root, key)
     return {ph: (max(1, base.count(ph)) if base is not None else 1) for ph in GUARDED[key]}
 
 

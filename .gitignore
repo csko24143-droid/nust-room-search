@@ -9,3 +9,5 @@ __pycache__/
 # Claude Code: 個人ごとの上書き設定（共有しない）
 .claude/settings.local.json
 CLAUDE.local.md
+# 必須表記ガードを一時的に緩めるマーカー（guard-notices.py 参照。作業後に削除する）
+.claude/guard-relax
