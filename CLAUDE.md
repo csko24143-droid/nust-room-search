@@ -18,6 +18,9 @@
 3. **公開文言では「予約」と言い切らない**: アプリの仮予約は非公式であり教室の使用権を保証しない旨を必ず併記。
 4. コミットは `git config user.email noreply@anthropic.com && git config user.name Claude` で行う（Verified表示のため）。
 
+ルール1・2は `.claude/hooks/guard-notices.py` が機械的に検査する（編集前・`git commit`/`push` 前・応答終了前）。CLAUDE.md の指示だけでは強制力がないため。判定は「コミット済みより出現数を減らさない」。表記を意図的に減らす・変えるセッションは `ROOMRADAR_GUARD_RELAX=1 claude` で起動し、フレーズ自体を変えるなら同ファイルの `GUARDED` も更新する。
+`.claude/settings.json` の permissions で、秘匿ファイルの読み取りは拒否、`git push` と Instagram 投稿は毎回確認になる。
+
 ## Instagram運用
 
 - 投稿は `.github/workflows/instagram-post.yml` を workflow_dispatch で実行（`post_type`: feed/story、`also_story`: 告知ストーリーを生成、`post_story`: 生成した告知ストーリーを投稿）。
