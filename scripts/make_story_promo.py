@@ -17,11 +17,15 @@ Instagramの仕様上、API経由のストーリーズには投稿への
 import argparse
 import base64
 import html as html_mod
+import os
 import sys
 import requests
 from playwright.sync_api import sync_playwright
 
 DEFAULT_HEADLINE = "新しい投稿をしました📣"
+# Claude Code on the web セッションの preinstall ブラウザ（他の make_*.py と同じ）。
+# 無ければ Playwright 既定（GitHub Actions では playwright install 済み）を使う。
+CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
 
 TEMPLATE = """<!DOCTYPE html>
 <html lang="ja"><head><meta charset="UTF-8">
@@ -146,7 +150,8 @@ def main():
     print(f"[INFO] 見出し: {headline}")
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(args=["--no-sandbox"])
+        browser = p.chromium.launch(executable_path=CHROME if os.path.exists(CHROME) else None,
+                                    args=["--no-sandbox"])
         page = browser.new_page(viewport={"width": 1080, "height": 1920})
         page.set_content(html, wait_until="networkidle")
         page.wait_for_timeout(800)
