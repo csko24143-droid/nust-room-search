@@ -5,6 +5,7 @@ reports.db
 # Python
 __pycache__/
 *.pyc
+.coverage
 
 # Claude Code: 個人ごとの上書き設定（共有しない）
 .claude/settings.local.json
